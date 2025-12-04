@@ -1,0 +1,42 @@
+notion_lib/
+│
+├── client/
+│   ├── __init__.py
+│   ├── auth.py
+│   ├── errors.py
+│   ├── http.py
+│   └── rate_limit.py
+│
+├── endpoints/
+│   ├── __init__.py
+│   ├── blocks.py
+│   ├── pages.py
+│   ├── databases.py
+│   └── search.py
+│
+├── models/
+│   ├── __init__.py
+│   ├── base_object.py
+│   ├── pages.py
+│   ├── databases.py
+│   └── blocks/
+│       ├── __init__.py
+│       ├── base_block.py
+│       ├── paragraph.py
+│       ├── heading.py
+│       ├── list_blocks.py
+│       ├── media.py
+│       └── table.py
+│
+├── types/
+│   ├── __init__.py
+│   ├── primitives.py
+│   ├── rich_text.py
+│   ├── files.py
+│   └── icons.py
+│
+└── utils/
+    ├── __init__.py
+    ├── constants.py
+    ├── id_parser.py
+    └── helpers.py

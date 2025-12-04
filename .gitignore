@@ -1,0 +1,5 @@
+﻿.idea
+client/__pycache__
+nEndpoints/__pycache__
+nTypes/__pycache__
+utils/__pycache__
