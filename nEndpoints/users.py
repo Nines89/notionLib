@@ -1,8 +1,8 @@
-from client.https import NGET, NPATCH, NDEL, NPOST
+from client.https import NGET
 try:
-    from mixed import find_page_parent
+    from mixed import find_parent_type
 except ModuleNotFoundError:
-    from nEndpoints.mixed import find_page_parent
+    from nEndpoints.mixed import find_parent_type
 
 BASE = "https://api.notion.com/v1/users"
 

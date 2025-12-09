@@ -13,7 +13,7 @@ class NotionSession:
 
     def request(self, method, url, json=None):
         while True:
-            r = requests.request(method, url, headers=self.headers, json=json)
+            r = requests.request(method, url, headers=self.headers, json=json, timeout=10)
             if r.status_code == 429:
                 handle_rate_limit(r)
                 continue
@@ -32,6 +32,7 @@ class NotionSession:
         code = data.get("code")
         msg = data.get("message", "")
         exc = ERROR_MAP.get(code, NotionError)
+
         raise exc(f"{self.name} -> <[{response.status_code}]> {''.join(x.capitalize() for x in code.split('_'))}: {msg}")
 
     def __getitem__(self, key):
@@ -81,7 +82,7 @@ class NDEL(NotionSession):
 
 
 if __name__ == '__main__':
-    from .auth import NotionApiClient
+    from auth import NotionApiClient
 
     api = NotionApiClient(key="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")
 

@@ -54,14 +54,14 @@ class NObj(ABC):
         self._ensure_data()
         return self._data['in_trash']
 
-    @property
-    def create_info(self):
-        self._ensure_data()
-        from notion_user import load_user
-        return {
-            'create_time': NDate(self._data['created_time']),
-            'create_user': load_user(self.header, self._data['created_by']['id'])
-        }
+    # @property
+    # def create_info(self):
+    #     self._ensure_data()
+    #     from notion_user import load_user
+    #     return {
+    #         'create_time': NDate(self._data['created_time']),
+    #         'create_user': load_user(self.header, self._data['created_by']['id'])
+    #     }
     #
     # @property
     # def last_edit_info(self):

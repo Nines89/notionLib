@@ -1,10 +1,10 @@
-import time
-
 from client.https import NGET, NPATCH, NPOST
+from utils.utils import check_url_or_id
+
 try:
-    from mixed import find_page_parent
+    from mixed import find_parent_type
 except ModuleNotFoundError:
-    from nEndpoints.mixed import find_page_parent
+    from nEndpoints.mixed import find_parent_type
 
 from utils.constants import ParentTypes
 
@@ -21,13 +21,29 @@ def create_page(headers: dict,
                 properties=None,
                 title: str = None,
                 icon: str = None,
-                cover: str = None
+                cover: str = None,
+                template_id: str = None
                 ):
+    # TODO: icon - cover
+    template_type = None
     if properties is None:
         properties = {}
-    parents_type = find_page_parent(headers, parent_id)
+
+    # template section
+    if template_id not in ['default', None]:
+        template_id = check_url_or_id(template_id)
+        template_type = "template_id"
+    if template_id:
+        template = {'type': template_id} if not template_type else {'type': template_type,
+                                                                    template_type: template_id}
+    else:
+        template = {'type': 'none'}
+    # parent section
+    parent_id = check_url_or_id(parent_id)
+    parents_type = find_parent_type(headers, parent_id)
     if parents_type not in ParentTypes:
-        raise AttributeError(f"Parent must be one of {' '.join(x for x in parents_type)}")
+        raise AttributeError(f"Parent must be one of "
+                             f"{' - '.join([x.value for x in ParentTypes.__members__.values()])}")  # noqa
     if parents_type == "database":
         NPOST(header=headers, url=BASE, data={
             "parent": {
@@ -36,6 +52,16 @@ def create_page(headers: dict,
             "icon": icon,
             "cover": cover,
             "properties": properties})
+    elif parents_type == "data_source":
+        NPOST(header=headers, url=BASE, data={
+            "parent": {
+                f"{parents_type}_id": parent_id,
+            },
+            "icon": icon,
+            "cover": cover,
+            "properties": properties,
+            "template": template
+        })
     else:
         NPOST(header=headers, url=BASE, data={
             "parent": {f"{parents_type}_id": parent_id},
@@ -74,6 +100,7 @@ def restore_page(headers, page_id):
 
 if __name__ == "__main__":
     from client.auth import NotionApiClient
+
     api = NotionApiClient(key="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")
     pg_id = "2a7b7a8f729480b3b420f8736c4116d7"
     pg_db_id = "2a7b7a8f729481ffadcfe600364f3fd4"
@@ -107,16 +134,17 @@ if __name__ == "__main__":
     # ob_db = get_page_property(api.headers, page_id=pg_db_id, property_id='%3D%60%5BD')
     # print('\n', ob_db)
     ############################# UPDATE PAGE PROPERTIES #####################################
-    from nTypes.primitives import NDate
-    new_data = {
-      "properties": {
-        "Date": {
-            'date': {"start": NDate('1984-04-24T22:49:00.000+00:00').to_dict()}}
-          }
-        }
-    update_page(api.headers, page_id=pg_db_id, payload=new_data)
-    time.sleep(2)
-    trash_page(api.headers, page_id=pg_db_id)
-    time.sleep(2)
-    restore_page(api.headers, page_id=pg_db_id)
+    # from nTypes.primitives import NDate
+    # new_data = {
+    #   "properties": {
+    #     "Date": {
+    #         'date': {"start": NDate('1984-04-24T22:49:00.000+00:00').to_dict()}}
+    #       }
+    #     }
+    # update_page(api.headers, page_id=pg_db_id, payload=new_data)
+    # time.sleep(2)
+    # trash_page(api.headers, page_id=pg_db_id)
+    # time.sleep(2)
+    # restore_page(api.headers, page_id=pg_db_id)
+
 
