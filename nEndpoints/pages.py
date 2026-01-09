@@ -13,6 +13,7 @@ CHILDREN = "https://api.notion.com/v1/blocks"
 
 
 def get_page(headers, page_id):
+    page_id = check_url_or_id(page_id)
     return NGET(header=headers, url=f"{BASE}/{page_id}")
 
 
@@ -79,22 +80,27 @@ def create_page(headers: dict,
 
 
 def get_block_children(headers, page_id) -> list:
+    page_id = check_url_or_id(page_id)
     return NGET(header=headers, url=f"{CHILDREN}/{page_id}/children")['results']
 
 
 def get_page_property(headers, page_id, property_id):
+    page_id = check_url_or_id(page_id)
     return NGET(header=headers, url=f"{BASE}/{page_id}/properties/{property_id}")
 
 
 def update_page(headers, page_id, payload):
+    page_id = check_url_or_id(page_id)
     return NPATCH(header=headers, url=f"{BASE}/{page_id}", data=payload)
 
 
 def trash_page(headers, page_id):
+    page_id = check_url_or_id(page_id)
     return NPATCH(header=headers, url=f"{BASE}/{page_id}", data={'archived': True})
 
 
 def restore_page(headers, page_id):
+    page_id = check_url_or_id(page_id)
     return NPATCH(header=headers, url=f"{BASE}/{page_id}", data={'archived': False})
 
 
@@ -125,9 +131,9 @@ if __name__ == "__main__":
     # print(get_page(api.headers, page_id=pg_id), '\n\n')
     # print(get_page(api.headers, page_id=pg_db_id))
     ############################# GET BLOCK CHILDREN ########################################
-    # objs = get_block_children(api.headers, page_id=pg_id)
-    # for ob in objs:
-    #     print(ob['type'])
+    objs = get_block_children(api.headers, page_id=pg_id)
+    for ob in objs:
+        print(ob['type'])
     ############################# GET PAGE PROPERTIES ########################################
     # ob = get_page_property(api.headers, page_id=pg_id, property_id='title')
     # print(ob)

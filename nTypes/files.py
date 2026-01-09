@@ -29,7 +29,7 @@ class FileTypeFile(BaseFile):
 def n_file(data: dict) -> BaseFile:
     """
     Helper: crea la corretta istanza file partendo da un dict Notion.
-    data = {"type": "file|external", ...}
+    Data = {"type": "file|external", ...}
     """
     t = data.get("type")
     if t == "file":

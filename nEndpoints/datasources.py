@@ -135,10 +135,12 @@ def move_ds(headers,
 
 
 def filter_a_ds(headers, ds_id, filt: dict):
+    ds_id = check_url_or_id(ds_id)
     return NPOST(header=headers, url=f"{BASE}/{ds_id}/query", data=filt)
 
 
 def sort_a_ds(headers, ds_id, sorties: dict):
+    ds_id = check_url_or_id(ds_id)
     return NPOST(header=headers, url=f"{BASE}/{ds_id}/query", data=sorties)
 
 
