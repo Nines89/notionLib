@@ -11,9 +11,9 @@ class NotionSession:
     def __init__(self, headers):
         self.headers = headers
 
-    def request(self, method, url, json=None):
+    def request(self, method, url, json=None, params=None):
         while True:
-            r = requests.request(method, url, headers=self.headers, json=json, timeout=10)
+            r = requests.request(method, url, headers=self.headers, json=json, params=params, timeout=10)
             if r.status_code == 429:
                 handle_rate_limit(r)
                 continue
@@ -52,9 +52,9 @@ class NotionSession:
 class NGET(NotionSession):
     name = "GetSession"
 
-    def __init__(self, url: str, header: dict = None):
+    def __init__(self, url: str, header: dict = None, params: dict = None):
         super().__init__(header)
-        self.response = self.request("GET", url=url)
+        self.response = self.request("GET", url=url, params=params)
 
 
 class NPOST(NotionSession):
