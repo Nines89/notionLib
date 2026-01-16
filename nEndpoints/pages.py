@@ -99,21 +99,7 @@ def get_block_children(headers, page_id) -> list:
 
 def get_page_property(headers, page_id, property_id):
     page_id = check_url_or_id(page_id)
-    all_blocks = []
-    cursor = None
-    while True:
-        params = {"start_cursor": cursor} if cursor else None
-        resp = NGET(
-            header=headers,
-            url=f"{BASE}/{page_id}/properties/{property_id}",
-            params=params
-        ).response
-        all_blocks.extend(resp["results"])
-        if not resp["has_more"]:
-            break
-        cursor = resp["next_cursor"]
-    return all_blocks
-    # return NGET(header=headers, url=f"{BASE}/{page_id}/properties/{property_id}")
+    return NGET(header=headers, url=f"{BASE}/{page_id}/properties/{property_id}")
 
 
 def update_page(headers, page_id, payload):

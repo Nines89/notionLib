@@ -136,12 +136,42 @@ def move_ds(headers,
 
 def filter_a_ds(headers, ds_id, filt: dict):
     ds_id = check_url_or_id(ds_id)
-    return NPOST(header=headers, url=f"{BASE}/{ds_id}/query", data=filt)
+    all_blocks = []
+    cursor = None
+    while True:
+        if cursor:
+            filt["start_cursor"] = cursor
+        resp = NPOST(
+            header=headers,
+            url=f"{BASE}/{ds_id}/query",
+            data=filt,
+        ).response
+        all_blocks.extend(resp["results"])
+        if not resp["has_more"]:
+            break
+        cursor = resp["next_cursor"]
+    return all_blocks
+
 
 
 def sort_a_ds(headers, ds_id, sorties: dict):
     ds_id = check_url_or_id(ds_id)
-    return NPOST(header=headers, url=f"{BASE}/{ds_id}/query", data=sorties)
+    all_blocks = []
+    cursor = None
+    while True:
+        if cursor:
+            sorties["start_cursor"] = cursor
+        resp = NPOST(
+            header=headers,
+            url=f"{BASE}/{ds_id}/query",
+            data=sorties,
+        ).response
+        all_blocks.extend(resp["results"])
+        if not resp["has_more"]:
+            break
+        cursor = resp["next_cursor"]
+    return all_blocks
+    # return NPOST(header=headers, url=f"{BASE}/{ds_id}/query", data=sorties)
 
 
 if __name__ == "__main__":
@@ -206,7 +236,7 @@ if __name__ == "__main__":
     # }
     # res_and_or_f = filter_a_ds(api.headers, ds_id_, and_or_f)
     # print(len(res_and_or_f['results']))
-    #################### FILTER DS EXAMPLE ######################################
+    #################### SORT DS EXAMPLE ######################################
     from nTypes.ds_filters import S
 
     db_id_ = "https://www.notion.so/2c0b7a8f72948024a529f2a82e767024?v=2c0b7a8f72948174811f000c8c4bab20&source=copy_link"
@@ -216,5 +246,9 @@ if __name__ == "__main__":
             # ("Link", True),
         )
     roles = sort_a_ds(api.headers, ds_id_, rules)
-    print(roles['results'][0])
+    print(roles)
+    #################### FILTER DS WITH CURSOR EXAMPLE ######################################
+    # db_id_ = "https://www.notion.so/2c0b7a8f72948024a529f2a82e767024?v=2c0b7a8f72948174811f000c8c4bab20&source=copy_link"
+    # ds_id_ = get_db_datasources(api.headers, db_id_)[1]['id']
+    # resp = filter_a_ds(api.headers, ds_id_, {})
     pass

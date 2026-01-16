@@ -60,9 +60,9 @@ class NGET(NotionSession):
 class NPOST(NotionSession):
     name = "PostSession"
 
-    def __init__(self, url: str, header: dict, data: dict):
+    def __init__(self, url: str, header: dict, data: dict, params: dict = None):
         super().__init__(header)
-        self.response = self.request("POST", url=url, json=data)
+        self.response = self.request("POST", url=url, json=data, params=params)
 
 
 class NPATCH(NotionSession):
