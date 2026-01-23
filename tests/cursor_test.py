@@ -37,46 +37,46 @@ tm_id = get_ds_templates(api.headers, ds_id_)['templates'][0]['id']
 #     print(f'create page number {i}')
 ################################### RETRIEVE ALL PAGES FROM DATASOURCE
 
-all_items = []
-next_cursor = None
-
-while True:
-    try:
-        resp = filter_a_ds(api.headers, ds_id_, filt={'start_cursor': next_cursor} if next_cursor else {})
-    except Exception as e:
-        print(f"Errore API: {e}, ritento...")
-        continue
-
-    all_items.extend(resp["results"])
-    if not resp["has_more"]:
-        break
-    next_cursor = resp["next_cursor"]
-
-print(f"Totale elementi recuperati: {len(all_items)}")
-
-
-
-def paginate(fn):
-    def wrapper(*args, **kwargs):
-        all_results = []
-        start_cursor = None
-
-        while True:
-            if start_cursor:
-                kwargs["start_cursor"] = start_cursor
-
-            resp = fn(*args, **kwargs)
-            all_results.extend(resp.get("results", []))
-
-            if not resp.get("has_more"):
-                break
-
-            start_cursor = resp.get("next_cursor")
-
-        return all_results
-    return wrapper
-
-all_items = filter_a_ds(api.headers, ds_id_, filt={})
-
-for item in all_items:
-    print(item['properties']['FIRST FIELD']['title'][0]['text']['content'])
+# all_items = []
+# next_cursor = None
+#
+# while True:
+#     try:
+#         resp = filter_a_ds(api.headers, ds_id_, filt={'start_cursor': next_cursor} if next_cursor else {})
+#     except Exception as e:
+#         print(f"Errore API: {e}, ritento...")
+#         continue
+#
+#     all_items.extend(resp["results"])
+#     if not resp["has_more"]:
+#         break
+#     next_cursor = resp["next_cursor"]
+#
+# print(f"Totale elementi recuperati: {len(all_items)}")
+#
+#
+#
+# def paginate(fn):
+#     def wrapper(*args, **kwargs):
+#         all_results = []
+#         start_cursor = None
+#
+#         while True:
+#             if start_cursor:
+#                 kwargs["start_cursor"] = start_cursor
+#
+#             resp = fn(*args, **kwargs)
+#             all_results.extend(resp.get("results", []))
+#
+#             if not resp.get("has_more"):
+#                 break
+#
+#             start_cursor = resp.get("next_cursor")
+#
+#         return all_results
+#     return wrapper
+#
+# all_items = filter_a_ds(api.headers, ds_id_, filt={})
+#
+# for item in all_items:
+#     print(item['properties']['FIRST FIELD']['title'][0]['text']['content'])

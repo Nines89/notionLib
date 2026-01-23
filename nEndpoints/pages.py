@@ -141,7 +141,8 @@ if __name__ == "__main__":
     # }
     # req_creat_db = create_page(api.headers, db_id, properties=prop)
     ############################# GET EXAMPLE ###############################################
-    # print(get_page(api.headers, page_id=pg_id), '\n\n')
+    pg_id = "https://www.notion.so/Amleto-1939b4f7b3cd8034be82ef3238702119"
+    print(get_page(api.headers, page_id=pg_id), '\n\n')
     # print(get_page(api.headers, page_id=pg_db_id))
     ############################# GET BLOCK CHILDREN ########################################
     # objs = get_block_children(api.headers, page_id=pg_id)
@@ -149,10 +150,10 @@ if __name__ == "__main__":
     # for ob in objs:
     #     print(ob['type'])
     ############################# GET PAGE PROPERTIES ########################################
-    ob = get_page_property(api.headers, page_id=pg_id, property_id='title')
-    print(ob)
-    ob_db = get_page_property(api.headers, page_id=pg_db_id, property_id='%3D%60%5BD')
-    print('\n', ob_db)
+    # ob = get_page_property(api.headers, page_id=pg_id, property_id='title')
+    # print(ob)
+    # ob_db = get_page_property(api.headers, page_id=pg_db_id, property_id='%3D%60%5BD')
+    # print('\n', ob_db)
     ############################# UPDATE PAGE PROPERTIES #####################################
     # from nTypes.primitives import NDate
     # new_data = {

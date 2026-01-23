@@ -31,6 +31,7 @@ def check_url_or_id(url_or_id: str):
     return _id
 
 
+
 if __name__ == "__main__":
     blk_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f7294814297b9cc59924601e3"
     print(check_url_or_id(blk_id))

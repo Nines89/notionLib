@@ -3,3 +3,6 @@ client/__pycache__
 nEndpoints/__pycache__
 nTypes/__pycache__
 utils/__pycache__
+nModels/__pycache__
+nModels/blocks/__pycache__
+tests/__pycache__

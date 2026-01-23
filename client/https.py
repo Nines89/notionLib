@@ -2,6 +2,20 @@ import requests
 
 from client.errors import ERROR_MAP, NotionError
 from client.rate_limit import handle_rate_limit
+from functools import lru_cache
+import certifi
+
+
+@lru_cache(maxsize=2048)
+def _cached_get(url: str, headers_key: tuple, params_key: tuple):
+    return requests.request(
+        "GET",
+        url,
+        headers=dict(headers_key),
+        params=dict(params_key) if params_key else None,
+        timeout=10,
+        verify=certifi.where()
+    )
 
 
 class NotionSession:
@@ -13,10 +27,26 @@ class NotionSession:
 
     def request(self, method, url, json=None, params=None):
         while True:
-            r = requests.request(method, url, headers=self.headers, json=json, params=params, timeout=10)
+            if method == "GET":
+                r = _cached_get(
+                    url,
+                    tuple(self.headers.items()),
+                    tuple(sorted((params or {}).items()))
+                )
+            else:
+                r = requests.request(
+                    method,
+                    url,
+                    headers=self.headers,
+                    json=json,
+                    params=params,
+                    timeout=10,
+                    verify=certifi.where()
+                )
             if r.status_code == 429:
                 handle_rate_limit(r)
                 continue
+
             return self._process_response(r)
 
     def _process_response(self, response):
