@@ -1,5 +1,4 @@
 from __future__ import annotations
-from dataclasses import dataclass
 from typing import Optional
 
 from nModels.base_object import ObjInterface
@@ -8,11 +7,6 @@ from nEndpoints import users as user_endpoint
 
 class UserError(Exception):
     pass
-
-
-@dataclass
-class UserData:
-    response: dict
 
 
 class NUser(ObjInterface):

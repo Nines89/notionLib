@@ -9,6 +9,7 @@ class ObjInterface(ABC):
         self.headers = headers
         self.obj_id = obj_id
         self._data = None
+        self._applied = False
 
     @abstractmethod
     def _apply(self, data):
@@ -30,7 +31,7 @@ class NObj(ObjInterface):
         pass
 
     def _ensure_data(self):
-        if not self._data:
+        if not hasattr(self, "impl"):
             self._refresh()
 
     @property
@@ -104,14 +105,6 @@ class NObjPage(NObj):
     def _refresh(self):
         self._data = get_page(headers=self.headers,
                               page_id=self.obj_id)
-
-class NObjBlock(NObj):
-    def _apply(self, data):
-        pass
-
-    def _refresh(self):
-        self._data = get_block(headers=self.headers,
-                               block_id=self.obj_id)
 
 
 class NObjDB(NObj):

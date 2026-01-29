@@ -138,3 +138,13 @@ def simple_rich_text_list(content: str, t_type: str = 'text'):
     ret = NRichList()
     ret.append(NRichText(rich_json))
     return ret
+
+def create_rich_list(rich_text_list: list):
+    rt = NRichList()
+    for item in rich_text_list:
+        el = NRichText(item)
+        rt.append(el)
+    return rt
+
+
+# create_rich_list(p.get("rich_text", [])

@@ -1,5 +1,5 @@
-# notion_lib/nModels/blocks/special_blocks.py
-from nModels.blocks.base_block import BaseBlock, register_block
+# notion_lib/nModels/blocks_v1/special_blocks.py
+from nModels.blocks_v1.base_block import BaseBlock, register_block
 from nTypes.rich_text import NRichList
 
 

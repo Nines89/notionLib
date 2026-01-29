@@ -1,85 +1,123 @@
-# notion_lib/nModels/blocks/base_block.py
-from typing import Type, Dict, Optional
 from nModels.base_object import NObj
-from nEndpoints import blocks as blocks_endpoint
-from nTypes.rich_text import NRichList
-
-# forward imports for registration (import only classes, avoid circular heavy imports)
-from nModels.blocks.paragraph import Paragraph
-from nModels.blocks.heading import Heading1, Heading2, Heading3
-from nModels.blocks.list_blocks import ToDo, Toggle, BulletedListItem, NumberedListItem
-from nModels.blocks.media import Image, FileBlock, Pdf, Embed
-from nModels.blocks.table import Table, TableRow
-from nModels.blocks.special_blocks import (
-    Callout, SyncedBlock, Breadcrumb, ChildPage, ChildDatabase,
-    CodeBlock, Equation, Bookmark, Column, ColumnList, Divider
-)
+from abc import ABC, abstractmethod
+from nEndpoints.blocks import *
 
 
-BLOCK_REGISTRY: Dict[str, Type["BaseBlock"]] = {}
+_BLOCK_REGISTRY = {}
+
+def register_block(block_type: str):
+    def wrapper(cls):
+        _BLOCK_REGISTRY[block_type] = cls
+        return cls
+    return wrapper
 
 
-def register_block(cls: Type["BaseBlock"]):
-    if cls.block_type:
-        BLOCK_REGISTRY[cls.block_type] = cls
-    return cls
+class BlockError(Exception):
+    pass
 
 
-class BaseBlock(NObj):
-    block_type: Optional[str] = None
+class NObjBlock(NObj):
+    def _apply(self, data):
+        self._data = data
+        self.type = data["type"]
+        self.impl = BlockFactory.from_data(
+            headers=self.headers,
+            data=data,
+            block_id=self.obj_id
+        )
+        self._applied = True
 
-    def __init__(self, session, obj_id: str):
-        super().__init__(session, obj_id)
-        self._children = None
+    def _refresh(self):
+        self._data = get_block(headers=self.headers,
+                               block_id=self.obj_id)
+        self._apply(data=self._data)
+
+class BlockImpl(ABC):
+    type: str
+    supports_children: bool = False
+
+    def __init__(self, headers, block_id=None):
+        self.headers = headers
+        self.block_id = block_id
+        self._data = None
 
     @classmethod
-    def from_json(cls, session, data: dict):
-        # if called directly create instance of cls
-        inst = cls(session, data["id"])
-        inst._apply(data)
-        return inst
+    @abstractmethod
+    def from_data(cls, headers, data: dict, block_id: str):
+        pass
 
-    @staticmethod
-    def load_from_json(session, data: dict):
-        btype = data.get("type")
-        cls = BLOCK_REGISTRY.get(btype, BaseBlock)
-        return cls.from_json(session, data)
+    @classmethod
+    @abstractmethod
+    def create(cls, **kwargs):
+        """create block from scratch"""
+        pass
 
-    def refresh(self):
-        data = blocks_endpoint.get_block(self.session, self.obj_id)
-        self._apply(data)
+    @abstractmethod
+    def to_payload(self) -> dict:
+        """payload for update / append"""
+        pass
 
     def update(self):
-        payload = self.to_patch_dict()
-        data = blocks_endpoint.update_block(self.session, self.obj_id, payload)
-        self._apply(data)
+        from nEndpoints.blocks import update_block
+        return update_block(self.headers, self.block_id, self.to_payload())
 
     def delete(self):
-        blocks_endpoint.delete_block(self.session, self.obj_id)
+        from nEndpoints.blocks import delete_block
+        return delete_block(self.headers, self.block_id)
 
-    def append(self, children_payload: list[dict]):
+    def get_children(self):
+        if not self.supports_children:
+            raise TypeError(f"{self.type} does not support children")
+        from nEndpoints.blocks import get_block_children
+        # TODO: appena finisci di scrivere  i blocchi torna la lista degli oggetti
+        return get_block_children(self.headers, self.block_id)
+
+    def append_children(self, children: list=None):
         """
-        children_payload: list of block spec dicts (already serialised)
+        append children append a block to a parent block
         """
-        data = blocks_endpoint.append_children(self.session, self.obj_id, children_payload)
-        # Notion returns the appended children in 'results'
-        return [BaseBlock.load_from_json(self.session, r) for r in data.get("results", [])]
+        if children is None:
+            raise BlockError(f"At least one child must be specified")
+        to_sent = [child.to_payload() for child in children]
+        if not self.supports_children:
+            return TypeError(f"{self.type} does not support children")
+        from nEndpoints.blocks import append_children
+        return append_children(self.headers, self.block_id, to_sent)
 
-    @property
-    def children(self):
-        if self._children is None:
-            # lazy load children via endpoint
-            data = blocks_endpoint.get_block(self.session, f"{self.obj_id}/children")
-            results = data.get("results", [])
-            self._children = [BaseBlock.load_from_json(self.session, r) for r in results]
-        return self._children
 
-    def to_patch_dict(self) -> dict:
-        raise NotImplementedError
+class UnsupportedBlock(BlockImpl):
+    type = "unsupported"
 
-    def _apply(self, data: dict):
-        # store raw data; subclasses should extend this (and call super)
-        self._data = data
+    @classmethod
+    def from_data(cls, headers, data, block_id):
+        obj = cls(headers=headers, block_id=block_id)
+        obj._data = data
+        return obj
 
-# Register base classes (these imports ensure registration)
-__all__ = ["BaseBlock", "register_block", "BLOCK_REGISTRY"]
+    @classmethod
+    def create(cls, **kwargs):
+        raise NotImplementedError("Unsupported block cannot be created")
+
+    def to_payload(self):
+        raise NotImplementedError("Unsupported block cannot be updated")
+
+
+class BlockFactory:
+    @staticmethod
+    def from_data(headers, data, block_id):
+        block_type = data["type"]
+        cls = _BLOCK_REGISTRY.get(block_type, UnsupportedBlock)
+        return cls.from_data(headers, data, block_id)
+
+
+class NFactory:
+    @staticmethod
+    def find(headers, block_id):
+        block_id = check_url_or_id(block_id)
+        blk = NObjBlock(headers, block_id)
+        try:
+            _ = blk.object_type
+            r = blk.impl
+        except AttributeError or TypeError as e:
+            raise BlockError(f"Factory cannot find a block because of {e}")
+        return r

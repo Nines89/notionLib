@@ -1,5 +1,5 @@
-# notion_lib/nModels/blocks/media.py
-from nModels.blocks.base_block import BaseBlock, register_block
+# notion_lib/nModels/blocks_v1/media.py
+from nModels.blocks_v1.base_block import BaseBlock, register_block
 from nTypes.files import n_file
 from nTypes.rich_text import NRichList
 

@@ -1,45 +1,87 @@
-# notion_lib/nModels/blocks/paragraph.py
-from nModels.blocks.base_block import BaseBlock, register_block
-from nTypes.rich_text import NRichList
+from nModels.blocks.base_block import register_block, BlockImpl
+from nTypes import NRichList
+from nTypes.rich_text import simple_rich_text_list, create_rich_list
+from utils.constants import NColors
 
-@register_block
-class Paragraph(BaseBlock):
-    block_type = "paragraph"
 
-    def __init__(self, session, obj_id: str):
-        super().__init__(session, obj_id)
-        self.rich_text = NRichList()
-        self.color = "default"
+@register_block("paragraph")
+class ParagraphBlock(BlockImpl):
+    type = "paragraph"
+    supports_children = True
 
-    def _apply(self, data: dict):
-        super()._apply(data)
-        p = data.get("paragraph", {})
-        rt = p.get("rich_text", [])
-        self.rich_text = NRichList([type("T", (), {"to_dict": (lambda self, x=r: x)})() for r in rt]) \
-            if rt else NRichList()
-        self.color = p.get("color", "default")
+    def __init__(self, headers, block_id=None, rich_text: NRichList=None, color="default"):
+        super().__init__(headers, block_id)
+        self._rich_text = rich_text or NRichList
+        self._color = color
 
-    def to_patch_dict(self) -> dict:
+    @classmethod
+    def from_data(cls, headers, data, block_id):
+        p = data["paragraph"]
+        obj = cls(
+            headers=headers,
+            block_id=block_id,
+            rich_text=create_rich_list(p.get("rich_text", [])),
+            color=p.get("color", "default")
+        )
+        obj._data = data
+        return obj
+
+    @classmethod
+    def create(cls, text: str, color="default"):
+        return cls(
+            headers=None,
+            rich_text=simple_rich_text_list(text),
+            color=color
+        )
+
+    def to_payload(self):
         return {
-            "type": "paragraph",
             "paragraph": {
-                "rich_text": self.rich_text.to_dict(),
-                "color": self.color
+                "rich_text": self._rich_text.to_dict(),
+                "color": self._color
             }
         }
 
-    @classmethod
-    def create(cls, session, parent_id: str, rich_text: NRichList, color: str = "default"):
-        payload = [{
-            "type": "paragraph",
-            "paragraph": {
-                "rich_text": rich_text.to_dict(),
-                "color": color
-            }
-        }]
-        data = session.patch(f"https://api.notion.com/v1/blocks/{parent_id}/children", json={"children": payload})
-        # session.patch already returns parsed json via http client; use results[0]
-        first = data.get("results", [None])[0]
-        if not first:
-            raise RuntimeError("Create paragraph failed")
-        return cls.from_json(session, first)
+    @property
+    def rich_text(self):
+        return self._rich_text
+
+    @rich_text.setter
+    def rich_text(self, value: str):
+        self._rich_text = simple_rich_text_list(value)
+
+    @property
+    def color(self):
+        return NColors(self._color)
+
+    @color.setter
+    def color(self, value: NColors):
+        self._color = value.value
+
+
+
+if __name__ == "__main__":
+    from client.auth import NotionApiClient
+    from nModels.blocks.base_block import NFactory
+
+    api = NotionApiClient(key="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")
+    obj_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f729481078b12e5862da8ce76"
+
+    # Partendo da un paragrafo bianco, vuoto, normale
+    # cambiamo il testo
+    # cambiamo il colore di sfondo
+    # aggiungiamo un figlio
+    # leggiamo tutti i figli
+
+    blk = NFactory.find(api.headers, obj_id)
+    print(blk.to_payload())
+    blk.rich_text = "Abbiamo un cambiamento netto!2"
+    blk.color = NColors.BLUE_BACKGROUND
+    print(blk.to_payload())
+    child = ParagraphBlock.create("Un paragrafo figlio")
+    child2 = ParagraphBlock.create("Un secondo paragrafo figlio")
+    children = [child, child2]
+    blk.update()
+    blk.append_children(children)
+
+    print(blk.get_children())

@@ -4,5 +4,7 @@ nEndpoints/__pycache__
 nTypes/__pycache__
 utils/__pycache__
 nModels/__pycache__
-nModels/blocks/__pycache__
+nModels/blocks_v1/__pycache__
 tests/__pycache__
+nModels/blocks/__pycache__
+OLDSTYLE
