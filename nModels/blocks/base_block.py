@@ -32,6 +32,7 @@ class NObjBlock(NObj):
                                block_id=self.obj_id)
         self._apply(data=self._data)
 
+
 class BlockImpl(ABC):
     type: str
     supports_children: bool = False

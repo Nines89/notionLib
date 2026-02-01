@@ -31,10 +31,13 @@ def n_file(data: dict) -> BaseFile:
     Helper: crea la corretta istanza file partendo da un dict Notion.
     Data = {"type": "file|external", ...}
     """
-    t = data.get("type")
-    if t == "file":
-        return FileTypeFile(data.get("url"), data.get("expiry_time"))
-    elif t == "external":
-        return FileTypeExternal(data.get("url"))
+    if data:
+        t = data.get("type")
+        if t == "file":
+            return FileTypeFile(data.get("url"), data.get("expiry_time"))
+        elif t == "external":
+            return FileTypeExternal(data['external'].get("url"))
+        else:
+            raise ValueError(f"Unknown file type: {data}")
     else:
-        raise ValueError(f"Unknown file type: {data}")
+        raise ValueError(f"Empty Data to create the File")
