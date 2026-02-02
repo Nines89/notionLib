@@ -15,7 +15,14 @@ class BaseFile:
 class FileTypeExternal(BaseFile):
     def __init__(self, url: str):
         super().__init__("external", {"url": url})
+        self.url = url
 
+
+
+class FileTypeUploaded(BaseFile):
+    def __init__(self, _id: str):
+        super().__init__("file_upload", {"id": _id})
+        self.id = _id
 
 class FileTypeFile(BaseFile):
     """Files caricati da Notion, con expiry & signed URL."""
@@ -24,7 +31,8 @@ class FileTypeFile(BaseFile):
         if expiry_time:
             data["expiry_time"] = expiry_time
         super().__init__("file", data)
-
+        self.url = url
+        self.expiry_time = expiry_time if expiry_time else None
 
 def n_file(data: dict) -> BaseFile:
     """
@@ -34,9 +42,11 @@ def n_file(data: dict) -> BaseFile:
     if data:
         t = data.get("type")
         if t == "file":
-            return FileTypeFile(data.get("url"), data.get("expiry_time"))
+            return FileTypeFile(data['file'].get("url"), data['file'].get("expiry_time"))
         elif t == "external":
             return FileTypeExternal(data['external'].get("url"))
+        elif t == "file_uploaded":
+            return FileTypeUploaded(data['file_upload'].get("id"))
         else:
             raise ValueError(f"Unknown file type: {data}")
     else:

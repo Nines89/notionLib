@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from nEndpoints.datasources import get_ds
 
 
+
 class ObjInterface(ABC):
     def __init__(self, headers: dict, obj_id):
         self.headers = headers
@@ -145,8 +146,9 @@ if __name__ == '__main__':
     start = time.time()
     from client.auth import NotionApiClient
     from nEndpoints.pages import get_page
-    from nEndpoints.blocks import get_block
     from nEndpoints.databases import get_db
+
+    from nModels.blocks.base_block import NObjBlock
 
     api = NotionApiClient(key="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")
     pg_id = "2a7b7a8f729480b3b420f8736c4116d7"
