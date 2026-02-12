@@ -35,6 +35,12 @@ class NObj(ObjInterface):
         if not hasattr(self, "impl"):
             self._refresh()
 
+    def append_children(self, children: list):
+        pass
+
+    def get_children(self):
+        pass
+
     @property
     def parent(self):
         self._ensure_data()

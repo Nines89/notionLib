@@ -36,6 +36,7 @@ class NObjBlock(NObj):
 class BlockImpl(ABC):
     type: str
     supports_children: bool = False
+    updatable: bool = True
 
     def __init__(self, headers, block_id=None):
         self.headers = headers
@@ -59,8 +60,10 @@ class BlockImpl(ABC):
         pass
 
     def update(self):
-        from nEndpoints.blocks import update_block
-        return update_block(self.headers, self.block_id, self.to_payload())
+        if self.updatable:
+            from nEndpoints.blocks import update_block
+            return update_block(self.headers, self.block_id, self.to_payload())
+        raise NotImplementedError(f"Impossible to update block {self.type}")
 
     def delete(self):
         from nEndpoints.blocks import delete_block
@@ -70,8 +73,7 @@ class BlockImpl(ABC):
         if not self.supports_children:
             raise TypeError(f"{self.type} does not support children")
         from nEndpoints.blocks import get_block_children
-        # TODO: appena finisci di scrivere  i blocchi torna la lista degli oggetti
-        return get_block_children(self.headers, self.block_id)
+        return [NFactory.find(self.headers, blk['id']) for blk in get_block_children(self.headers, self.block_id)]
 
     def append_children(self, children: list=None):
         """
@@ -79,7 +81,10 @@ class BlockImpl(ABC):
         """
         if children is None:
             raise BlockError(f"At least one child must be specified")
-        to_sent = [child.to_payload() for child in children]
+        to_sent = [child.to_payload() for child in children
+                   if child.__class__ not in ["ChildDatabaseBlock",
+                                              "ChildPageBlock"]
+                   ]
         if not self.supports_children:
             return TypeError(f"{self.type} does not support children")
         from nEndpoints.blocks import append_children
@@ -88,6 +93,7 @@ class BlockImpl(ABC):
 
 class UnsupportedBlock(BlockImpl):
     type = "unsupported"
+    supports_children: bool = True
 
     @classmethod
     def from_data(cls, headers, data, block_id):
