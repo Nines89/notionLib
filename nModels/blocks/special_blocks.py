@@ -540,15 +540,50 @@ class QuoteBlock(BlockImpl):
                  headers,
                  block_id=None,
                  rich_text: NRichList = None,
-                 color: NColors = None,
-                 ):
+                 color: str = "default",
+                 children: list = None):
         super().__init__(headers, block_id)
-        self._rich_text = rich_text or NRichList
+        self._rich_text = rich_text or NRichList()
         self._color = color
-        if block_id is None:
-            self._children = []
-        else:
-            self._children = self.get_children()
+        self._children_cache = children or []
+
+    @property
+    def children(self):
+        if not self._children_cache and self.block_id:
+            self._children_cache = self.get_children()
+        return self._children_cache
+
+    def _invalidate_cache(self):
+        self._children_cache = []
+
+    def add_child(self, block):
+        """Appende un figlio e aggiorna la cache."""
+        self.append_children([block])
+        self._invalidate_cache()
+
+    def add_children(self, blocks: list):
+        """Appende più figli e aggiorna la cache."""
+        self.append_children(blocks)
+        self._invalidate_cache()
+
+    def remove_child(self, block):
+        """Elimina un figlio tramite il suo ID e aggiorna la cache."""
+        block.delete()
+        self._invalidate_cache()
+
+    def remove_child_at(self, index: int):
+        """Elimina il figlio all'indice dato e aggiorna la cache."""
+        child = self.children[index]
+        child.delete()
+        self._invalidate_cache()
+
+    def update_child(self, block):
+        """Aggiorna un figlio e invalida la cache."""
+        if not block.updatable:
+            print(f"Warning: {block.type} is not updatable, skipped.")
+            return
+        block.update()
+        self._invalidate_cache()
 
     @classmethod
     def from_data(cls, headers, data, block_id):
@@ -557,31 +592,135 @@ class QuoteBlock(BlockImpl):
             headers=headers,
             block_id=block_id,
             rich_text=create_rich_list(p.get("rich_text", [])),
-            color=NColors(p.get("color", "default")),
+            color=p.get("color", "default"),
         )
         obj._data = data
         return obj
 
     @classmethod
-    def create(cls, text: str, color: NColors, children=None):
-        return cls(headers=None,
-                   rich_text=simple_rich_text_list(text),
-                   color=color,
-       )
+    def create(cls, text: str, color: NColors = NColors.DEFAULT, children: list = None):
+        return cls(
+            headers=None,
+            rich_text=simple_rich_text_list(text),
+            color=color.value,
+            children=children or []
+        )
+
+    def to_payload(self):
+        payload = {
+            "quote": {
+                "rich_text": self._rich_text.to_dict(),
+                "color": self._color,
+            }
+        }
+        if self.block_id is None and self._children_cache:
+            payload["quote"]["children"] = [child.to_payload() for child in self._children_cache]
+        return payload
+
+    @property
+    def rich_text(self):
+        return self._rich_text
+
+    @rich_text.setter
+    def rich_text(self, value: str):
+        self._rich_text = simple_rich_text_list(value)
+
+    @property
+    def color(self):
+        return NColors(self._color)
+
+    @color.setter
+    def color(self, value: NColors):
+        self._color = value.value
+
+
+@register_block("table_of_contents")
+class TableOfContentsBlock(BlockImpl):
+    type = "table_of_contents"
+    supports_children = False
+    updatable = True
+
+    def __init__(self,
+                 headers,
+                 block_id=None,
+                 color: str = "default"):
+        super().__init__(headers, block_id)
+        self._color = color
+
+    @classmethod
+    def from_data(cls, headers, data, block_id):
+        p = data["table_of_contents"]
+        obj = cls(
+            headers=headers,
+            block_id=block_id,
+            color=p.get("color", "default"),
+        )
+        obj._data = data
+        return obj
+
+    @classmethod
+    def create(cls, color: NColors = NColors.DEFAULT):
+        return cls(
+            headers=None,
+            color=color.value,
+        )
 
     def to_payload(self):
         return {
-            "quote": {
-                "rich_text": self._rich_text.to_dict(),
-                "color": self._color.value
+            "table_of_contents": {
+                "color": self._color,
             }
         }
 
-    #TODO: Add children logic to quote
-    # Add children to a quote: Use Append block children (PATCH /v1/blocks/{quote_block_id}/children) with a children array in the request body.
-    # You can also include children when initially creating the quote block.
-    # Update children of a quote: Use Update a block (PATCH /v1/blocks/{child_block_id}) on individual child blocks.
-    # You cannot bulk-update children — update each child block by its ID.
+    @property
+    def color(self):
+        return NColors(self._color)
+
+    @color.setter
+    def color(self, value: NColors):
+        self._color = value.value
+
+
+@register_block("link_preview")
+class LinkPreviewBlock(BlockImpl):
+    type = "link_preview"
+    supports_children = False
+    updatable = False
+
+    def __init__(self,
+                 headers,
+                 block_id=None,
+                 url: str = None):
+        super().__init__(headers, block_id)
+        self._url = url
+
+    @classmethod
+    def from_data(cls, headers, data, block_id):
+        p = data["link_preview"]
+        obj = cls(
+            headers=headers,
+            block_id=block_id,
+            url=p.get("url")
+        )
+        obj._data = data
+        return obj
+
+    @classmethod
+    def create(cls, **kwargs):
+        raise NotImplementedError("LinkPreviewBlock is read-only and cannot be created via API.")
+
+    def to_payload(self):
+        raise NotImplementedError("LinkPreviewBlock is read-only and cannot be updated via API.")
+
+    def update(self):
+        raise NotImplementedError("LinkPreviewBlock is read-only and cannot be updated via API.")
+
+    @property
+    def url(self) -> str:
+        return self._url
+
+    def __repr__(self):
+        return f"<LinkPreviewBlock url='{self._url}'>"
 
 
 if __name__ == "__main__":
@@ -695,11 +834,53 @@ if __name__ == "__main__":
     # cols[0].append_children([CodeBlock.create(text="print('Hello World')", language=NLanguage.PYTHON, caption="Esempio Python")])
 
     # test divider
-    divider = NFactory.find(api.headers, obj_divider)
-    print(f"Divider: {divider.__class__}")
-    new_divider = DividerBlock.create()
-    father.append_children([new_divider])
+    # divider = NFactory.find(api.headers, obj_divider)
+    # print(f"Divider: {divider.__class__}")
+    # new_divider = DividerBlock.create()
+    # father.append_children([new_divider])
 
     # test quote
-    quote = NFactory.find(api.headers, obj_quote)
+    # from paragraph import ParagraphBlock
+    # quote = NFactory.find(api.headers, obj_quote)
+    # quote.add_child(ParagraphBlock.create("figlio ASD"))
+    # quote.add_children([ParagraphBlock.create("figlio DSA"),
+    #                     ParagraphBlock.create("figlio SAD")])
+    #
+    # for child in quote.children:
+    #     if isinstance(child, ParagraphBlock):
+    #         child.rich_text = "This is a Paragraph"
+    #     quote.update_child(child)
+    #
+    # # facciamo attenzione che tutte le volte che si fa l'update bisogna controllare
+    # # che i figli siano in vita
+    # quote.remove_child(quote.children[1])
+    #
+    # quote.color = NColors.RED
+    # quote.rich_text = "TITLE CHANGE"
+    # quote.update()
+
+    # test table of contents
+    # obj_toc = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#325b7a8f729480e1b401f81fb5c311da"
+    #
+    # # test table_of_contents
+    # toc = NFactory.find(api.headers, obj_toc)
+    # print(f"ToC color: {toc.color}")
+    # toc.color = NColors.BLUE_BACKGROUND
+    # toc.update()
+    #
+    # new_toc = TableOfContentsBlock.create(color=NColors.BLUE)
+    # father.append_children([new_toc])
+
+    # test link_preview
+    # -----------------------------------------------------------------------
+    # TEST LinkPreviewBlock
+    # Nota: il blocco non può essere creato via API, solo recuperato.
+    # Per trovarlo, cerca una pagina dove hai incollato un URL esterno
+    # (es. link GitHub, Figma, Jira) e Notion ha generato un preview.
+    # -----------------------------------------------------------------------
+    # obj_link_preview = "IL_TUO_BLOCK_ID"
+    # blk = NFactory.find(api.headers, obj_link_preview)
+    # print(blk)
+    # print("URL:", blk.url)
+
     pass
