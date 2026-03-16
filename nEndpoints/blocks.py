@@ -97,3 +97,11 @@ if __name__ == "__main__":
     # })
     #
     # req_delete = NDEL(url_up_del, api.headers)
+
+
+
+# TODO: more blocks to complete
+# - "quote"
+# - "table_of_contents"
+# - "template"
+# - "transcription"

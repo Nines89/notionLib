@@ -530,6 +530,60 @@ class DividerBlock(BlockImpl):
         return {'divider': {}}
 
 
+@register_block("quote")
+class QuoteBlock(BlockImpl):
+    type = "quote"
+    supports_children = True
+    updatable = True
+
+    def __init__(self,
+                 headers,
+                 block_id=None,
+                 rich_text: NRichList = None,
+                 color: NColors = None,
+                 ):
+        super().__init__(headers, block_id)
+        self._rich_text = rich_text or NRichList
+        self._color = color
+        if block_id is None:
+            self._children = []
+        else:
+            self._children = self.get_children()
+
+    @classmethod
+    def from_data(cls, headers, data, block_id):
+        p = data["quote"]
+        obj = cls(
+            headers=headers,
+            block_id=block_id,
+            rich_text=create_rich_list(p.get("rich_text", [])),
+            color=NColors(p.get("color", "default")),
+        )
+        obj._data = data
+        return obj
+
+    @classmethod
+    def create(cls, text: str, color: NColors, children=None):
+        return cls(headers=None,
+                   rich_text=simple_rich_text_list(text),
+                   color=color,
+       )
+
+    def to_payload(self):
+        return {
+            "quote": {
+                "rich_text": self._rich_text.to_dict(),
+                "color": self._color.value
+            }
+        }
+
+    #TODO: Add children logic to quote
+    # Add children to a quote: Use Append block children (PATCH /v1/blocks/{quote_block_id}/children) with a children array in the request body.
+    # You can also include children when initially creating the quote block.
+    # Update children of a quote: Use Update a block (PATCH /v1/blocks/{child_block_id}) on individual child blocks.
+    # You cannot bulk-update children — update each child block by its ID.
+
+
 if __name__ == "__main__":
     import sys
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
@@ -552,13 +606,13 @@ if __name__ == "__main__":
     obj_bookmark = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f729481a88bb8f028e919c93f"
     obj_column = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#304b7a8f729480cc8ae9f786a0b05d79"
     obj_divider = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#305b7a8f729480dc80bfd914821b79c9"
+    obj_quote = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#322b7a8f7294802fba7af54ca8f03d78"
 
     icon_ = NEmoji({
                 "type": "emoji",
                 "emoji": "🥑"
               })
 
-    children = []
     # ################### CALLOUT ##########################
     # blk_h1 = NFactory.find(api.headers, obj_call)
     # # questi cambieranno in base al tipo di icona
@@ -632,8 +686,8 @@ if __name__ == "__main__":
     #     ColumnListBlock.create_with_columns(count, father)
     #
     # child = None
-    # children = father.get_children()
-    # for child in children:
+    # children_ = father.get_children()
+    # for child in children_:
     #     if isinstance(child, ColumnListBlock):
     #         break
     #
@@ -646,4 +700,6 @@ if __name__ == "__main__":
     new_divider = DividerBlock.create()
     father.append_children([new_divider])
 
+    # test quote
+    quote = NFactory.find(api.headers, obj_quote)
     pass

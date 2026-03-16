@@ -1,8 +1,6 @@
 from nModels.blocks.base_block import register_block, BlockImpl
-from nTypes import NRichList, IconFactory, NEmoji
-from nTypes.rich_text import simple_rich_text_list, create_rich_list, NRichText
-from utils.constants import NColors, NLanguage
-from nModels import NObj
+from nTypes import NRichList
+from nTypes.rich_text import simple_rich_text_list, create_rich_list
 
 
 @register_block("table_row")
@@ -13,7 +11,7 @@ class TableRowBlock(BlockImpl):
     def __init__(self,
                  headers,
                  block_id=None,
-                 cells: list[NRichList()] = None):
+                 cells: list[NRichList()] = None): # noqa
         super().__init__(headers, block_id)
         self._cells = [
             cell if isinstance(cell, NRichList) else create_rich_list(cell)
@@ -64,7 +62,7 @@ class TableBlock(BlockImpl):
                  table_width: int = None,
                  has_column_header: bool = None,
                  has_row_header: bool = None,
-                 cells: [TableRowBlock] = None):
+                 cells: [TableRowBlock] = None): # noqa
         super().__init__(headers, block_id)
         self._block_id = block_id
         self._table_width = table_width
@@ -93,8 +91,8 @@ class TableBlock(BlockImpl):
                table_width: int,
                has_column_header: bool,
                has_row_header: bool,
-               cells: [TableRowBlock] = None):
-        for idx, c in enumerate(cells):
+               cells: [TableRowBlock] = None): # noqa
+        for idx, c in enumerate(cells): # noqa
             if len(c) != table_width:
                 raise ArithmeticError(f"Number of columns of the row {idx+1} is {len(c)} instead of {table_width}")
         return cls(
@@ -106,7 +104,7 @@ class TableBlock(BlockImpl):
         )
 
     def cell(self, row: int, column: int):
-        return self._cells[row-1].cell(column)
+        return self._cells[row-1].cell(column) # noqa
 
     def to_payload(self):
 
@@ -117,7 +115,7 @@ class TableBlock(BlockImpl):
 
         if self.block_id is None:
             payload["table_width"] = self._table_width
-            payload["children"] = [row.to_payload() for row in self._cells]
+            payload["children"] = [row.to_payload() for row in self._cells]  # noqa
 
         return {
             "type": "table",
@@ -140,6 +138,23 @@ class TableBlock(BlockImpl):
     def has_row_header(self, value: bool):
         self._has_row_header = value
 
+    def update(self):
+        _ = super().update()
+        for row in self._cells: # noqa
+            return row.update()
+
+    def __getitem__(self, item):
+        if isinstance(item, tuple):
+            r, c = item
+            return self._cells[r-1].cell(c) # noqa
+        return  self._cells[item] # noqa
+
+    def __setitem__(self, item, value):
+        if isinstance(item, tuple):
+            r, c = item
+            self._cells[r-1]._cells[c-1] = simple_rich_text_list(value) # noqa
+        return  None
+
 
 if __name__ == "__main__":
     import sys
@@ -160,19 +175,20 @@ if __name__ == "__main__":
     table_blk = NFactory.find(api.headers, obj_table)
     print(table_blk.to_payload())
     table_blk.has_column_header = True
-    table_blk.has_row_header = True
-    table_blk.update()
+    table_blk.has_row_header = False
 
     cell_to_read = (1, 1)
     print(table_blk.cell(*cell_to_read))
+    print(table_blk[1, 1])
+
+    table_blk[1, 1] = "mod obj"
+    table_blk.update()
 
     rows = []
-    for r in range(1, 3):
-        rows.append(TableRowBlock.create([simple_rich_text_list(f"tit {r} 1"),
-                                          simple_rich_text_list(f"tit {r} 2")]))
+    for ro in range(1, 3):
+        rows.append(TableRowBlock.create([simple_rich_text_list(f"tit {ro} 1"),
+                                          simple_rich_text_list(f"tit {ro} 2")]))
 
     table = TableBlock.create(2, False, True, cells=rows)
     father.append_children([table])
 
-    # guarda la fine di questa conversazione, valuta get e set item per leggere la tabella oltre che il cells
-    pass

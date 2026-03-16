@@ -103,9 +103,9 @@ class File(BlockImpl):
         )
 
     def to_payload(self):
-        payload = {"image": self._file_object.to_dict()}
-        payload['image']["caption"] = self._caption.to_dict()
-        del payload['image']["type"]
+        payload = {"file": self._file_object.to_dict()}
+        payload['file']["caption"] = self._caption.to_dict()
+        del payload['file']["type"]
         return payload
 
     def update(self):
