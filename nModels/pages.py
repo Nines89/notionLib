@@ -419,8 +419,8 @@ if __name__ == "__main__":
     # print("Title:", db_page.title())
     # for name, prop in db_page.properties.items():
     #     print(f"  {name!r:30} ({prop.prop_type}): {prop.value}")
-    #
-    # # Fluent write + update
+
+    # Fluent write + update
     # db_page.set_prop("Status", "Done").set_prop("Phone", "100").update()
 
     # ── Create a new SimplePage ──────────────────
@@ -445,6 +445,3 @@ if __name__ == "__main__":
     # new_db_page = DatabasePage.create(api.headers, parent_db_id, props)
     # print("Created:", new_db_page)
 
-
-    #TODO: funziona, ma non mi convince la logica - Le proprietà vengono lette, ma non classificate
-    # creare una proprietà è complicato. Fare un upgrade difficile.

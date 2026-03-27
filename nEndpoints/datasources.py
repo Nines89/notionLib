@@ -49,10 +49,12 @@ def create_ds(headers: dict,
             else:
                 for pr, nm in prop_schema.items():
                     prop_dict[nm] = {pr: {}}
+    if not 'title' in prop_dict.keys():
+        prop_dict['Title'] = {"title": {}}
     elements = {"parent": {
         "type": f"{parents_type}_id",
         f"{parents_type}_id": parent_id,
-    }
+        }
     }
     if title: elements['title'] = simple_rich_text_list(title).to_dict()  # noqa
     if prop_dict:

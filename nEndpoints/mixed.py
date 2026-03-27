@@ -4,11 +4,11 @@ from client.errors import ValidationError, ObjectNotFound
 def find_parent_type(headers: dict,
                      _id: str):
     # TODO: ADD WORKSPACE?
-    from pages import get_page
-    from databases import get_db
-    from blocks import get_block
-    from comments import get_comment
-    from datasources import get_ds
+    from nEndpoints.pages import get_page
+    from nEndpoints.databases import get_db
+    from nEndpoints.blocks import get_block
+    from nEndpoints.comments import get_comment
+    from nEndpoints.datasources import get_ds
     try:
         return get_page(headers, _id)['object']
     except ValidationError:
