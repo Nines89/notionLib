@@ -17,35 +17,6 @@ from utils.constants import DbFieldType
 
 
 # ──────────────────────────────────────────────
-# Schema property (definizione colonna, NON valore)
-# ──────────────────────────────────────────────
-
-@dataclass
-class SchemaProperty:
-    """
-    Rappresenta la definizione di una colonna nel DB/DS schema.
-    Diversa da PropertyValue (che rappresenta il valore in una pagina).
-    """
-    name: str
-    prop_id: str
-    prop_type: str
-    config: dict = field(default_factory=dict)   # configurazione specifica del tipo (es. options per select)
-
-    @classmethod
-    def from_data(cls, name: str, data: dict) -> "SchemaProperty":
-        prop_type = data.response.get("type", "")
-        return cls(
-            name=name,
-            prop_id=data.response.get("id", ""),
-            prop_type=prop_type,
-            config=data.response.get(prop_type, {}) or {},
-        )
-
-    def __repr__(self):
-        return f"<SchemaProperty '{self.name}' type={self.prop_type} id={self.prop_id}>"
-
-
-# ──────────────────────────────────────────────
 # NDatabase
 # ──────────────────────────────────────────────
 
@@ -57,19 +28,16 @@ class NDatabase(NObj):
     """
     Modello per un Notion Database.
 
-    Il Database è un contenitore che definisce uno SCHEMA (proprietà tipizzate).
-    Le entry sono DataSource (DS), accessibili via NDatabase.datasources.
+    Le entry sono DataSource (DS), accessibili via NDatabase.datasources. Loro definiscono lo schema.
 
     Operazioni supportate:
-      - Lettura: title, properties (schema), datasources, is_inline, is_locked
+      - Lettura: title, datasources, is_inline, is_locked
       - Scrittura: update(), move(), trash(), restore()
       - Creazione DS figlio: create_datasource()
 
     Esempio:
         db = DatabaseFactory.find(headers, db_url)
         print(db.title)
-        for name, schema_prop in db.schema.items():
-            print(name, schema_prop.prop_type)
 
         db.title = "Nuovo titolo"
         db.update()
@@ -81,7 +49,6 @@ class NDatabase(NObj):
     def __init__(self, headers: dict, db_id: str):
         super().__init__(headers, db_id)
         self._title: str = ""
-        self._schema: dict[str, SchemaProperty] = {}
         self._is_inline: Optional[bool] = None
         self._is_locked: Optional[bool] = None
         self._raw_datasources: list[dict] = []   # [{"id": "...", "name": "..."}]
@@ -95,12 +62,6 @@ class NDatabase(NObj):
         # title: lista rich_text
         title_items = data.response.get("title", [])
         self._title = "".join(t.get("plain_text", "") for t in title_items)
-
-        # schema proprietà
-        self._schema = {
-            name: SchemaProperty.from_data(name, prop_data)
-            for name, prop_data in data.response.get("properties", {}).items()
-        }
 
         self._is_inline = data.response.get("is_inline")
         self._is_locked = data.response.get("is_locked")
@@ -124,12 +85,6 @@ class NDatabase(NObj):
     @title.setter
     def title(self, value: str):
         self._title = value
-
-    @property
-    def schema(self) -> dict[str, SchemaProperty]:
-        """Schema del database: {nome_colonna: SchemaProperty}"""
-        self._ensure_data()
-        return self._schema
 
     @property
     def is_inline(self) -> Optional[bool]:
@@ -283,9 +238,6 @@ if __name__ == "__main__":
     print("Inline:", db.is_inline)
     print("Locked:", db.is_locked)
 
-    print("\nSchema:")
-    for name, sp in db.schema.items():
-        print(f"  {name!r:30} type={sp.prop_type} id={sp.prop_id}")
 
     print("\nDataSources:")
     for ds in db.datasources:

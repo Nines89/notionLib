@@ -253,7 +253,7 @@ class DatabasePage(NPage):
         super()._apply(data)
         self._properties = {
             name: PropertyFactory.from_data(name, prop_data)
-            for name, prop_data in data.response.get("properties", {}).items()
+            for name, prop_data in data.get("properties", {}).items()
         }
 
     # ── property access ──────────────────────────

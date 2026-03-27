@@ -162,7 +162,7 @@ class NDataSource(NObj):
         if self._templates is None:
             raw = get_ds_templates(self.headers, self.obj_id)
             self._templates = [
-                DataSourceTemplate(t) for t in raw.get("templates", [])
+                DataSourceTemplate(t) for t in raw.response.get("templates", [])
             ]
         return self._templates
 
@@ -282,7 +282,7 @@ class NDataSource(NObj):
 
     def move(self, new_parent_db_id: str):
         """Sposta il DS sotto un altro database."""
-        result = move_ds(self.headers, self.obj_id, new_parent_db_id)
+        result = move_ds(self.headers, self.obj_id, check_url_or_id(new_parent_db_id))
         self._apply(result)
         return result
 
@@ -402,9 +402,9 @@ if __name__ == "__main__":
     from client.auth import NotionApiClient
     from nTypes.ds_filters import F, S
 
-    api = NotionApiClient(key="YOUR_KEY_HERE")
+    api = NotionApiClient(key="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")
 
-    db_url = "YOUR_DB_URL_HERE"
+    db_url = "https://www.notion.so/2a7b7a8f729481919ac9c1853a813571?v=2a7b7a8f7294819bb426000cf2da4ff8&source=copy_link"
 
     # ── Carica DB e recupera DS tramite NDatabase ──
     from nModels.databases import DatabaseFactory
@@ -428,37 +428,37 @@ if __name__ == "__main__":
 
         # ── Query ──────────────────────────────────
         # Tutte le entry
-        # all_e = ds.all_entries()
-        # print(f"\nTotale entry: {len(all_e)}")
+        all_e = ds.all_entries()
+        print(f"\nTotale entry: {len(all_e)}")
 
         # Filtra per checkbox
-        # results = ds.filter({"filter": F.checkbox("Done").equals(True)})
-        # print(f"Entry 'Done': {len(results)}")
+        results = ds.filter({"filter": F.checkbox("check").equals(True)})
+        print(f"Entry 'check': {len(results)}")
 
         # Ordina per nome
-        # sorted_e = ds.sort(S().get(("FIRST FIELD", True)))
-        # print(f"Sorted: {len(sorted_e)}")
+        sorted_e = ds.sort(S().get(("Name", True)))
+        print(f"Sorted: {len(sorted_e)}")
 
         # Combina filtro + ordinamento
-        # combined = ds.query(
-        #     filt={"filter": F.checkbox("Done").equals(False)},
-        #     sorties=S().get(("FIRST FIELD", True))
-        # )
+        combined = ds.query(
+            filt={"filter": F.checkbox("check").equals(False)},
+            sorties=S().get(("Name", True))
+        )
 
         # ── Schema management ───────────────────────
-        # ds.add_property("select", "Categoria")
-        # ds.rename_property("Categoria", "Category")
-        # ds.remove_property("Category")
+        ds.add_property("select", "Categoria")
+        ds.rename_property("Categoria", "Category")
+        ds.remove_property("Category")
 
         # ── Crea entry ─────────────────────────────
-        # entry = ds.create_entry(
-        #     properties={"FIRST FIELD": {"title": [{"text": {"content": "Test entry"}}]}},
-        #     template_id=ds.default_template,
-        # )
-        # print("Entry creata:", entry)
+        entry = ds.create_entry(
+            properties={"Name": {"title": [{"text": {"content": "Test entry"}}]}},
+            template_id=ds.default_template,
+        )
+        print("Entry creata:", entry)
 
         # ── Sposta DS sotto altro DB ────────────────
-        # ds.move("ALTRO_DB_URL")
+        ds_list[1].move("https://www.notion.so/ad506059a56f4626b7a4c4ee5a1f4430?v=e589b1d587604016ba6e9b840da871b3&source=copy_link")
 
         # ── Aggiorna titolo ─────────────────────────
-        # ds.update(title="Nuovo Titolo DS")
+        ds.update(title="Nuovo Titolo DS da ds e non da db")
