@@ -1,7 +1,7 @@
 import re
 
 
-def check_url_or_id(url_or_id: str):
+def check_url_or_id(url_or_id: str) -> str:
     if re.fullmatch(r"[0-9a-f-]{32,36}", url_or_id, re.IGNORECASE):
         _id = url_or_id.replace("-", "")
         if len(_id) != 32:
@@ -12,9 +12,9 @@ def check_url_or_id(url_or_id: str):
         return url_or_id
 
     pattern = re.compile(
-        r"#([0-9a-f]{32})"                          # ID dopo #
-        r"|notion\.so/[A-Za-z0-9_-]+-([0-9a-f]{32})"  # con slug
-        r"|notion\.so/([0-9a-f]{32})",               # senza slug
+        r"#([0-9a-f]{32})"
+        r"|notion\.so/[A-Za-z0-9_-]+-([0-9a-f]{32})"
+        r"|notion\.so/([0-9a-f]{32})",
         re.IGNORECASE
     )
 
@@ -29,6 +29,22 @@ def check_url_or_id(url_or_id: str):
     if len(_id) != 32:
         raise ValueError("Token Length is Incorrect")
     return _id
+
+
+def resolve_response(data) -> dict:
+    """
+    Normalizza l'input a un dict grezzo.
+
+    I metodi HTTP (NGET, NPOST, ecc.) restituiscono oggetti NotionSession
+    il cui attributo .response è il dict JSON. Alcuni chiamanti passano
+    direttamente il dict (es. dopo aver già letto .response).
+    Questa funzione gestisce entrambi i casi.
+    """
+    if hasattr(data, "response"):
+        return data.response
+    if isinstance(data, dict):
+        return data
+    raise TypeError(f"Data type {type(data)} can't be worked as Notion response.")
 
 
 

@@ -1,9 +1,17 @@
-from nModels.base_object import NObj
 from abc import ABC, abstractmethod
-from nEndpoints.blocks import *
 
+from nModels.base_object import NObj
+from nEndpoints.blocks import (
+    get_block,
+    get_block_children,
+    update_block,
+    delete_block,
+    append_children,
+    check_url_or_id,
+)
 
-_BLOCK_REGISTRY = {}
+_BLOCK_REGISTRY: dict[str, type] = {}
+
 
 def register_block(block_type: str):
     def wrapper(cls):
@@ -12,29 +20,48 @@ def register_block(block_type: str):
     return wrapper
 
 
+def _ensure_registry_populated():
+    """
+    Importa tutti i moduli di blocco per garantire che i decorator
+    @register_block abbiano eseguito e popolato _BLOCK_REGISTRY.
+
+    Chiamata lazy: viene eseguita una sola volta al primo NFactory.find().
+    """
+    if len(_BLOCK_REGISTRY) > 2:   # paragraph + unsupported già registrati
+        return
+    import nModels.blocks.paragraph       # noqa: F401
+    import nModels.blocks.heading         # noqa: F401
+    import nModels.blocks.list_blocks     # noqa: F401
+    import nModels.blocks.media           # noqa: F401
+    import nModels.blocks.table           # noqa: F401
+    import nModels.blocks.special_blocks  # noqa: F401
+    import nModels.blocks.meeting_notes   # noqa: F401
+
+
 class BlockError(Exception):
     pass
 
 
 class NObjBlock(NObj):
     def _apply(self, data):
-        self._data = data
-        self.type = data["type"]
+        raw = data.response if hasattr(data, "response") else data
+        self._data = raw
+        self.type = raw["type"]
         self.impl = BlockFactory.from_data(
             headers=self.headers,
-            data=data,
+            data=raw,
             block_id=self.obj_id
         )
         self._applied = True
 
     def _refresh(self):
-        self._data = get_block(headers=self.headers,
-                               block_id=self.obj_id)
+        self._data = get_block(headers=self.headers, block_id=self.obj_id)
         self._apply(data=self._data)
 
 
 class BlockImpl(ABC):
     type: str
+    block_type: str = ""
     supports_children: bool = False
     updatable: bool = True
 
@@ -51,49 +78,49 @@ class BlockImpl(ABC):
     @classmethod
     @abstractmethod
     def create(cls, **kwargs):
-        """create block from scratch"""
         pass
 
     @abstractmethod
     def to_payload(self) -> dict:
-        """payload for update / append"""
         pass
 
     def update(self):
-        if self.updatable:
-            from nEndpoints.blocks import update_block
-            return update_block(self.headers, self.block_id, self.to_payload())
-        raise NotImplementedError(f"Impossible to update block {self.type}")
+        if not self.updatable:
+            raise NotImplementedError(f"Il blocco '{self.type}' non supporta update.")
+        return update_block(self.headers, self.block_id, self.to_payload())
 
     def delete(self):
-        from nEndpoints.blocks import delete_block
         return delete_block(self.headers, self.block_id)
 
-    def get_children(self):
+    def get_children(self) -> list:
         if not self.supports_children:
-            raise TypeError(f"{self.type} does not support children")
-        from nEndpoints.blocks import get_block_children
-        return [NFactory.find(self.headers, blk['id']) for blk in get_block_children(self.headers, self.block_id)]
+            raise TypeError(f"'{self.type}' non supporta children.")
+        return [
+            NFactory.find(self.headers, blk['id'])
+            for blk in get_block_children(self.headers, self.block_id)
+        ]
 
-    def append_children(self, children: list=None):
-        """
-        append children append a block to a parent block
-        """
-        if children is None:
-            raise BlockError(f"At least one child must be specified")
-        to_sent = [child.to_payload() for child in children
-                   if child.__class__ not in ["ChildDatabaseBlock",
-                                              "ChildPageBlock"]
-                   ]
+    def append_children(self, children: list = None) -> None:
+        if not children:
+            raise BlockError("Almeno un figlio deve essere specificato.")
         if not self.supports_children:
-            return TypeError(f"{self.type} does not support children")
-        from nEndpoints.blocks import append_children
-        return append_children(self.headers, self.block_id, to_sent)
+            raise TypeError(f"'{self.type}' non supporta children.")
+
+        # FIX: era `child.__class__ not in ["ChildDatabaseBlock", ...]`
+        # confronto classe/stringa sempre True → filtro inoperante.
+        # Ora import locale per evitare circolarità + isinstance corretto.
+        from nModels.blocks.special_blocks import ChildDatabaseBlock, ChildPageBlock
+        to_send = [
+            child.to_payload()
+            for child in children
+            if not isinstance(child, (ChildDatabaseBlock, ChildPageBlock))
+        ]
+        return append_children(self.headers, self.block_id, to_send)
 
 
 class UnsupportedBlock(BlockImpl):
     type = "unsupported"
-    supports_children: bool = True
+    supports_children = True
 
     @classmethod
     def from_data(cls, headers, data, block_id):
@@ -103,10 +130,10 @@ class UnsupportedBlock(BlockImpl):
 
     @classmethod
     def create(cls, **kwargs):
-        raise NotImplementedError("Unsupported block cannot be created")
+        raise NotImplementedError("UnsupportedBlock non può essere creato.")
 
     def to_payload(self):
-        raise NotImplementedError("Unsupported block cannot be updated")
+        raise NotImplementedError("UnsupportedBlock non può essere aggiornato.")
 
 
 class BlockFactory:
@@ -120,11 +147,11 @@ class BlockFactory:
 class NFactory:
     @staticmethod
     def find(headers, block_id):
+        _ensure_registry_populated()
         block_id = check_url_or_id(block_id)
         blk = NObjBlock(headers, block_id)
         try:
             _ = blk.object_type
-            r = blk.impl
-        except AttributeError or TypeError as e:
-            raise BlockError(f"Factory cannot find a block because of {e}")
-        return r
+            return blk.impl
+        except (AttributeError, TypeError) as e:
+            raise BlockError(f"NFactory non riesce a trovare il blocco: {e}")

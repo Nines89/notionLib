@@ -1,4 +1,3 @@
-# notion_lib/nTypes/primitives.py
 from datetime import datetime
 
 
@@ -11,7 +10,7 @@ class Ntype:
 
 
 class NDate:
-    def __init__(self, data: str | datetime): # noqa
+    def __init__(self, data: str | datetime):  # noqa
         if isinstance(data, str):
             self.data = datetime.fromisoformat(data.replace("Z", "+00:00"))
         else:
@@ -27,14 +26,6 @@ class NDate:
 
 
 class NText(Ntype):
-    """
-    "text": {
-    "content": "Some words ",
-    "link": {
-            'url': 'some url'
-        }
-    },
-    """
     @property
     def content(self):
         return self._data['text']['content']
@@ -54,8 +45,7 @@ class NText(Ntype):
         if self._data['text']['link']:
             self._data['text']['link']['url'] = value
         else:
-            self._data['text']['link'] = {}
-            self._data['text']['link']['url'] = value
+            self._data['text']['link'] = {'url': value}
 
     def __repr__(self):
         return f"Content: {self.content}\nLink: {self.link}"
@@ -67,11 +57,6 @@ class NText(Ntype):
 
 
 class NEquation(Ntype):
-    """
-        "equation": {
-        "expression": "E = mc^2"
-      },
-    """
     @property
     def equation(self):
         return self._data['equation']['expression']
@@ -85,7 +70,6 @@ class NEquation(Ntype):
 
 
 class NMention:
-    """Placeholder: da espandere se servono menzioni di utenti/pagine/database."""
     def __init__(self, mention_obj: dict):
         self.data = mention_obj
 

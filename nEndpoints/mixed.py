@@ -1,37 +1,53 @@
 from client.errors import ValidationError, ObjectNotFound
 
 
-def find_parent_type(headers: dict,
-                     _id: str):
-    # TODO: ADD WORKSPACE?
+# Ordine di lookup ottimizzato: page prima (caso più comune), poi data_source,
+# poi database, poi block. Ogni chiamata HTTP ha costo → minimizziamo i tentativi.
+_LOOKUP_ORDER = ["page", "data_source", "database", "block"]
+
+
+def find_parent_type(headers: dict, _id: str) -> str:
+    """
+    Determina il tipo di oggetto Notion dato un ID.
+
+    Ritorna una stringa tra: 'page', 'data_source', 'database', 'block'.
+    Solleva ObjectNotFound se nessun endpoint riconosce l'ID.
+
+    Nota: questa funzione esegue fino a 4 chiamate HTTP in cascata.
+    Usarla con parsimonia; preferire il tipo esplicito dove noto.
+    """
     from nEndpoints.pages import get_page
     from nEndpoints.databases import get_db
     from nEndpoints.blocks import get_block
-    from nEndpoints.comments import get_comment
     from nEndpoints.datasources import get_ds
-    try:
-        return get_page(headers, _id)['object']
-    except ValidationError:
+
+    lookups = {
+        "page":        get_page,
+        "data_source": get_ds,
+        "database":    get_db,
+        "block":       get_block,
+    }
+
+    last_exc = None
+    for obj_type in _LOOKUP_ORDER:
         try:
-            return get_db(headers, _id)['object']
-        except ObjectNotFound:
-            try:
-                return get_block(headers, _id)['object']
-            except ObjectNotFound:
-                raise ValueError("MA CHE CAZZO DI TIPO SEI?")
-    except ObjectNotFound:
-        try:
-            return get_comment(headers, _id)['object']
-        except ObjectNotFound as e:
-            try:
-                return get_ds(headers, _id)['object']
-            except ObjectNotFound as e:
-                raise ObjectNotFound(e)
+            result = lookups[obj_type](headers, _id)
+            # Alcuni endpoint restituiscono NGET; normalizza
+            obj = result.response if hasattr(result, "response") else result
+            return obj.get("object", obj_type)
+        except (ObjectNotFound, ValidationError, Exception) as e:
+            last_exc = e
+            continue
+
+    raise ObjectNotFound(
+        f"Nessun oggetto Notion trovato per l'ID '{_id}'. "
+        f"Ultimo errore: {last_exc}"
+    )
 
 
-def is_there_more():
-    # TODO: implement
-    pass
+def is_there_more(response: dict) -> bool:
+    """Controlla se la risposta paginata ha ulteriori risultati."""
+    return bool(response.get("has_more", False))
 
 
 if __name__ == "__main__":

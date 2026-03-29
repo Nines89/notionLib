@@ -1,9 +1,10 @@
 import requests
+from functools import lru_cache
+
+import certifi
 
 from client.errors import ERROR_MAP, NotionError
 from client.rate_limit import handle_rate_limit
-from functools import lru_cache
-import certifi
 
 
 @lru_cache(maxsize=2048)
@@ -18,19 +19,29 @@ def _cached_get(url: str, headers_key: tuple, params_key: tuple):
     )
 
 
+def invalidate_cache() -> None:
+    """
+    Svuota la cache delle GET.
+
+    Da chiamare dopo operazioni mutanti (update, append_children, delete, ecc.)
+    per garantire che le successive GET restituiscano dati aggiornati.
+    """
+    _cached_get.cache_clear()
+
+
 class NotionSession:
-    name = 'Session'
+    name = "Session"
     response = None
 
-    def __init__(self, headers):
+    def __init__(self, headers: dict):
         self.headers = headers
 
-    def request(self, method, url, json=None, params=None):
+    def request(self, method: str, url: str, json=None, params=None):
         while True:
             if method == "GET":
                 r = _cached_get(
                     url,
-                    tuple(self.headers.items()),
+                    tuple(sorted(self.headers.items())),
                     tuple(sorted((params or {}).items()))
                 )
             else:
@@ -46,37 +57,34 @@ class NotionSession:
             if r.status_code == 429:
                 handle_rate_limit(r)
                 continue
-
             return self._process_response(r)
 
     def _process_response(self, response):
         if response.ok:
-            if response.text:
-                return response.json()
-            return {}
+            return response.json() if response.text else {}
+
         try:
             data = response.json()
         except Exception:
             raise NotionError(f"{self.name} -> {response.status_code}: {response.text}")
 
-        code = data.get("code")
+        code = data.get("code", "")
         msg = data.get("message", "")
         exc = ERROR_MAP.get(code, NotionError)
-
-        raise exc(f"{self.name} -> <[{response.status_code}]> {''.join(x.capitalize() for x in code.split('_'))}: {msg}")
+        label = "".join(x.capitalize() for x in code.split("_"))
+        raise exc(f"{self.name} -> [{response.status_code}] {label}: {msg}")
 
     def __getitem__(self, key):
-        if self.response:
-            if key in self.response:
-                return self.response[key]
-            raise NotionError(f"The response key {key} does not exist")
-        raise NotionError(f"The request response doesn't exists")
+        if self.response is None:
+            raise NotionError("La risposta non è ancora disponibile.")
+        if key not in self.response:
+            raise NotionError(f"Chiave '{key}' non presente nella risposta.")
+        return self.response[key]
 
     def __repr__(self):
-        out = ""
-        for key, item in self.response.items():
-            out += f"{key}: {item}\n"
-        return out
+        if not self.response:
+            return f"<{self.name} (nessuna risposta)>"
+        return "\n".join(f"{k}: {v}" for k, v in self.response.items())
 
 
 class NGET(NotionSession):
@@ -92,6 +100,8 @@ class NPOST(NotionSession):
 
     def __init__(self, url: str, header: dict, data: dict, params: dict = None):
         super().__init__(header)
+        # Le POST mutano dati: invalida la cache preventivamente
+        invalidate_cache()
         self.response = self.request("POST", url=url, json=data, params=params)
 
 
@@ -100,6 +110,8 @@ class NPATCH(NotionSession):
 
     def __init__(self, url: str, header: dict, data: dict):
         super().__init__(header)
+        # Le PATCH mutano dati: invalida la cache
+        invalidate_cache()
         self.response = self.request("PATCH", url=url, json=data)
 
 
@@ -108,6 +120,8 @@ class NDEL(NotionSession):
 
     def __init__(self, url: str, header: dict):
         super().__init__(header)
+        # Le DELETE mutano dati: invalida la cache
+        invalidate_cache()
         self.response = self.request("DELETE", url=url)
 
 
@@ -116,8 +130,8 @@ if __name__ == '__main__':
 
     api = NotionApiClient(key="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")
 
-    block_id = "2a7b7a8f729480b3b420f8736c4116d7"
-    block_id_up = "2bfb7a8f729480be906ff97723827c53"
+    block_id = "2a7b7a8f72948113b82cef011fbc7fd1"
+    block_id_up = "332b7a8f729480388444e0ce5586639a"
 
     url_get = f"https://api.notion.com/v1/blocks/{block_id}"
     url_up_del = f"https://api.notion.com/v1/blocks/{block_id_up}"

@@ -23,9 +23,8 @@ def create_page(headers: dict,
                 title: str = None,
                 icon: str = None,
                 cover: str = None,
-                template_id: str = None
-                ):
-    # TODO: icon - cover
+                template_id: str = None):
+    # TODO: icon - cover (oggetti tipizzati)
     template_type = None
     if properties is None:
         properties = {}
@@ -35,47 +34,46 @@ def create_page(headers: dict,
         template_id = check_url_or_id(template_id)
         template_type = "template_id"
     if template_id:
-        template = {'type': template_id} if not template_type else {'type': template_type,
-                                                                    template_type: template_id}
+        template = {'type': template_id} if not template_type else {
+            'type': template_type,
+            template_type: template_id
+        }
     else:
         template = {'type': 'none'}
+
     # parent section
     parent_id = check_url_or_id(parent_id)
     parents_type = find_parent_type(headers, parent_id)
     if parents_type not in ParentTypes:
-        raise AttributeError(f"Parent must be one of "
-                             f"{' - '.join([x.value for x in ParentTypes.__members__.values()])}")  # noqa
+        raise AttributeError(
+            f"Parent deve essere uno tra: "
+            f"{' - '.join([x.value for x in ParentTypes.__members__.values()])}"
+        )
+
+    # FIX: tutti i branch ora restituiscono il risultato di NPOST
     if parents_type == "database":
-        NPOST(header=headers, url=BASE, data={
-            "parent": {
-                f"{parents_type}_id": parent_id,
-            },
-            "icon": icon,
-            "cover": cover,
-            "properties": properties})
-    elif parents_type == "data_source":
-        NPOST(header=headers, url=BASE, data={
-            "parent": {
-                f"{parents_type}_id": parent_id,
-            },
+        return NPOST(header=headers, url=BASE, data={
+            "parent": {f"{parents_type}_id": parent_id},
             "icon": icon,
             "cover": cover,
             "properties": properties,
-            "template": template
+        })
+    elif parents_type == "data_source":
+        return NPOST(header=headers, url=BASE, data={
+            "parent": {f"{parents_type}_id": parent_id},
+            "icon": icon,
+            "cover": cover,
+            "properties": properties,
+            "template": template,
         })
     else:
-        NPOST(header=headers, url=BASE, data={
+        return NPOST(header=headers, url=BASE, data={
             "parent": {f"{parents_type}_id": parent_id},
             "icon": icon,
             "cover": cover,
             "properties": {
-                "title": [
-                    {
-                        "type": "text",
-                        "text": {"content": title}
-                    }
-                ]
-            }
+                "title": [{"type": "text", "text": {"content": title or ""}}]
+            },
         })
 
 
@@ -141,7 +139,7 @@ if __name__ == "__main__":
     # }
     # req_creat_db = create_page(api.headers, db_id, properties=prop)
     ############################# GET EXAMPLE ###############################################
-    pg_id = "https://www.notion.so/Amleto-1939b4f7b3cd8034be82ef3238702119"
+    pg_id = "https://www.notion.so/color-A2DCEE-textbf-API-Example-2a7b7a8f729480b3b420f8736c4116d7"
     print(get_page(api.headers, page_id=pg_id), '\n\n')
     # print(get_page(api.headers, page_id=pg_db_id))
     ############################# GET BLOCK CHILDREN ########################################

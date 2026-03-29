@@ -13,7 +13,7 @@ from nEndpoints.blocks import append_children as _append_children
 from nTypes.icons import IconFactory
 from nTypes.files import n_file, FileTypeExternal
 from nTypes.page_properties import PropertyValue, PropertyFactory
-from utils.utils import check_url_or_id
+from utils.utils import check_url_or_id, resolve_response
 
 
 class PageError(Exception):
@@ -25,34 +25,19 @@ class PageError(Exception):
 # ──────────────────────────────────────────────
 
 class NPage(NObj):
-    """
-    Base class for all Notion pages.
-
-    Shared behaviour:
-      - icon / cover read + write
-      - url, parent (inherited from NObj)
-      - get_children() → list[BlockImpl]
-      - append_children(children)
-      - update(), trash(), restore()
-
-    Subclasses decide how to build to_payload().
-    """
-
     def __init__(self, headers: dict, page_id: str):
         super().__init__(headers, page_id)
 
-    # ── data lifecycle ──────────────────────────────
-
-    def _apply(self, data: dict):
-        self._data = data
+    def _apply(self, data):
+        self._data = resolve_response(data)
         self._applied = True
 
     def _refresh(self):
-        self._data = get_page(self.headers, self.obj_id)
-        self._apply(self._data)
+        self._data = resolve_response(get_page(self.headers, self.obj_id))
+        self._applied = True
 
     def _ensure_data(self):
-        if not self._applied:
+        if not self._applied or self._data is None:
             self._refresh()
 
     # ── shared properties ───────────────────────────
@@ -60,29 +45,27 @@ class NPage(NObj):
     @property
     def icon(self):
         self._ensure_data()
-        raw = self._data.response.get("icon")
+        raw = self._data.get("icon")
         return IconFactory.find(raw) if raw else None
 
     @icon.setter
     def icon(self, value):
-        """Pass an NEmoji / NCustomEmoji / FileTypeExternal instance, or None to clear."""
         self._pending_icon = value.to_payload() if value else None
 
     @property
     def cover(self):
         self._ensure_data()
-        raw = self._data.response.get("cover")
+        raw = self._data.get("cover")
         return n_file(raw) if raw else None
 
     @cover.setter
     def cover(self, value: Optional[FileTypeExternal]):
-        """Notion only allows external URLs as covers."""
         self._pending_cover = value.to_dict() if value else None
 
     @property
     def url(self) -> Optional[str]:
         self._ensure_data()
-        return self._data.response.get("url")
+        return self._data.get("url")
 
     # ── children ────────────────────────────────────
 
@@ -101,10 +84,6 @@ class NPage(NObj):
         raise NotImplementedError
 
     def update(self):
-        """
-        Builds the properties payload, merges any pending icon / cover,
-        and sends a PATCH to the pages endpoint.
-        """
         payload = self.to_payload()
         if hasattr(self, "_pending_icon"):
             payload["icon"] = self._pending_icon
@@ -113,7 +92,6 @@ class NPage(NObj):
             payload["cover"] = self._pending_cover
             del self._pending_cover
         result = update_page(self.headers, self.obj_id, payload)
-        # Re-apply so the local state stays in sync
         self._apply(result)
         return result
 
@@ -133,31 +111,18 @@ class NPage(NObj):
 
 
 # ──────────────────────────────────────────────
-# SimplePage  (parent = page | workspace)
+# SimplePage  (parent = page | workspace | block)
 # ──────────────────────────────────────────────
 
 class SimplePage(NPage):
-    """
-    A Notion page whose parent is another page or the workspace.
-    Only carries a title (no typed DB properties).
-
-    Usage:
-        page = PageFactory.find(headers, page_url)
-        page.title = "New title"
-        page.update()
-
-        page.append_children([ParagraphBlock.create("Hello")])
-        blocks = page.get_children()
-    """
-
     def __init__(self, headers: dict, page_id: str):
         super().__init__(headers, page_id)
         self._title: str = ""
 
-    def _apply(self, data: dict):
+    def _apply(self, data):
         super()._apply(data)
         try:
-            title_items = data["properties"]["title"]["title"]
+            title_items = self._data["properties"]["title"]["title"]
             self._title = "".join(t.get("plain_text", "") for t in title_items)
         except (KeyError, TypeError):
             self._title = ""
@@ -175,9 +140,7 @@ class SimplePage(NPage):
         from nTypes.rich_text import simple_rich_text_list
         return {
             "properties": {
-                "title": {
-                    "title": simple_rich_text_list(self._title).to_dict()
-                }
+                "title": {"title": simple_rich_text_list(self._title).to_dict()}
             }
         }
 
@@ -188,12 +151,7 @@ class SimplePage(NPage):
                title: str,
                icon=None,
                cover=None) -> "SimplePage":
-        """
-        Create a new simple page and return the hydrated SimplePage object.
-        """
-        from nEndpoints.pages import create_page as _create_page
         from client.https import NPOST
-
         parent_id = check_url_or_id(parent_id)
         payload: dict = {
             "parent": {"page_id": parent_id},
@@ -205,12 +163,7 @@ class SimplePage(NPage):
             payload["icon"] = icon.to_payload()
         if cover:
             payload["cover"] = cover.to_dict()
-
-        data = NPOST(
-            header=headers,
-            url="https://api.notion.com/v1/pages",
-            data=payload
-        ).response
+        data = NPOST(header=headers, url="https://api.notion.com/v1/pages", data=payload).response
         page = cls(headers, data["id"])
         page._apply(data)
         return page
@@ -221,42 +174,21 @@ class SimplePage(NPage):
 
 
 # ──────────────────────────────────────────────
-# DatabasePage  (parent = database)
+# DatabasePage  (parent = database | data_source)
 # ──────────────────────────────────────────────
 
 class DatabasePage(NPage):
-    """
-    A Notion page whose parent is a database.
-    All columns are exposed as typed PropertyValue wrappers.
-
-    Usage — reading:
-        page = PageFactory.find(headers, page_url)
-        print(page.prop("Status").value)        # "In Progress"
-        print(page.prop("Due Date").start)      # NDate(...)
-        print(page.prop("Score").value)         # 42.0
-
-    Usage — writing (fluent chain):
-        page.set_prop("Status", "Done") \\
-            .set_prop("Score", 100) \\
-            .update()
-
-    Direct property access:
-        page.prop("Tags").value = ["urgent", "feature"]
-        page.update()
-    """
-
     def __init__(self, headers: dict, page_id: str):
         super().__init__(headers, page_id)
         self._properties: dict[str, PropertyValue] = {}
 
-    def _apply(self, data: dict):
+    def _apply(self, data):
+        # FIX: resolve_response gestisce sia NGET che dict grezzo
         super()._apply(data)
         self._properties = {
             name: PropertyFactory.from_data(name, prop_data)
-            for name, prop_data in data.get("properties", {}).items()
+            for name, prop_data in self._data.get("properties", {}).items()
         }
-
-    # ── property access ──────────────────────────
 
     @property
     def properties(self) -> dict[str, PropertyValue]:
@@ -264,25 +196,17 @@ class DatabasePage(NPage):
         return self._properties
 
     def prop(self, name: str) -> PropertyValue:
-        """Return a typed wrapper for the given property name."""
         self._ensure_data()
         if name not in self._properties:
             available = list(self._properties.keys())
-            raise KeyError(
-                f"Property '{name}' not found. Available: {available}"
-            )
+            raise KeyError(f"Property '{name}' non trovata. Disponibili: {available}")
         return self._properties[name]
 
     def set_prop(self, name: str, value) -> "DatabasePage":
-        """
-        Set a property value by name. Returns self for fluent chaining.
-        For DateProperty pass an NDate; for multi-value props pass a list.
-        """
         self.prop(name).value = value
         return self
 
     def title(self) -> str:
-        """Convenience: return the text of the title property."""
         self._ensure_data()
         title_prop = next(
             (p for p in self._properties.values() if p.prop_type == "title"),
@@ -290,23 +214,14 @@ class DatabasePage(NPage):
         )
         return title_prop.value if title_prop else ""
 
-    # ── payload ──────────────────────────────────
-
     def to_payload(self) -> dict:
-        """
-        Builds the properties payload skipping read-only ones silently.
-        Only properties whose value was actually modified should be included
-        for efficiency — for now we send the full writable set.
-        """
         props = {}
         for prop in self._properties.values():
             try:
                 props.update(prop.to_payload())
             except AttributeError:
-                pass  # read-only: skip
+                pass  # read-only: skip silenziosamente
         return {"properties": props}
-
-    # ── factory create ───────────────────────────
 
     @classmethod
     def create(cls,
@@ -315,19 +230,7 @@ class DatabasePage(NPage):
                properties: dict,
                icon=None,
                cover=None) -> "DatabasePage":
-        """
-        Create a new database page.
-
-        properties: dict built with PropertyValue.to_payload() merged together, e.g.
-            {
-                "Name":   {"title":  [...]},
-                "Status": {"status": {"name": "In Progress"}},
-                "Score":  {"number": 42},
-            }
-        Returns the hydrated DatabasePage object.
-        """
         from client.https import NPOST
-
         parent_db_id = check_url_or_id(parent_db_id)
         payload: dict = {
             "parent": {"database_id": parent_db_id},
@@ -337,12 +240,7 @@ class DatabasePage(NPage):
             payload["icon"] = icon.to_payload()
         if cover:
             payload["cover"] = cover.to_dict()
-
-        data = NPOST(
-            header=headers,
-            url="https://api.notion.com/v1/pages",
-            data=payload
-        ).response
+        data = NPOST(header=headers, url="https://api.notion.com/v1/pages", data=payload).response
         page = cls(headers, data["id"])
         page._apply(data)
         return page
@@ -357,28 +255,21 @@ class DatabasePage(NPage):
 # ──────────────────────────────────────────────
 
 class PageFactory:
-    """
-    Entry point for loading any Notion page.
-
-    Returns a SimplePage or DatabasePage depending on the parent type.
-
-    Usage:
-        page = PageFactory.find(headers, page_url_or_id)
-    """
-
     @staticmethod
     def find(headers: dict, page_id: str) -> NPage:
         page_id = check_url_or_id(page_id)
-        data = get_page(headers, page_id)
+        raw = resolve_response(get_page(headers, page_id))
 
-        parent_type = data.response.get("parent", {}).get("type", "")
-        if parent_type == "data_source_id":
+        parent_type = raw.get("parent", {}).get("type", "")
+
+        # FIX: aggiunto "database_id" — prima veniva trattato come SimplePage
+        if parent_type in ("data_source_id", "database_id"):
             page = DatabasePage(headers, page_id)
         else:
-            # page_id, workspace, block_id → all treated as SimplePage
+            # page_id, workspace, block_id → SimplePage
             page = SimplePage(headers, page_id)
 
-        page._apply(data)
+        page._apply(raw)
         return page
 
 
@@ -413,12 +304,12 @@ if __name__ == "__main__":
     # simple.append_children([ParagraphBlock.create("Hello from the model!")])
 
     # ── DatabasePage ────────────────────────────
-    # print("\n=== DatabasePage ===")
-    # db_page = PageFactory.find(api.headers, db_page_url)
-    # print(db_page)
-    # print("Title:", db_page.title())
-    # for name, prop in db_page.properties.items():
-    #     print(f"  {name!r:30} ({prop.prop_type}): {prop.value}")
+    print("\n=== DatabasePage ===")
+    db_page = PageFactory.find(api.headers, db_page_url)
+    print(db_page)
+    print("Title:", db_page.title())
+    for name, prop in db_page.properties.items():
+        print(f"  {name!r:30} ({prop.prop_type}): {prop.value}")
 
     # Fluent write + update
     # db_page.set_prop("Status", "Done").set_prop("Phone", "100").update()

@@ -28,8 +28,6 @@ class _PropertyFilter:
         }
 
 
-# ------------------ Filtri per tipo ------------------
-
 class _CheckboxFilter(_PropertyFilter):
     def equals(self, value: bool):
         return self._build("equals", value)
@@ -165,23 +163,20 @@ class _RelationFilter(_PropertyFilter):
 
 
 class _RollupFilter(_PropertyFilter):
-    basic_structure = {
-        "rich_text": {
-            "contains": ""
-        }
-    }
+    # FIX: era una variabile di classe mutabile condivisa tra tutte le istanze.
+    # Ora ogni chiamata costruisce un nuovo dict locale → nessuno stato condiviso.
+
+    def _make_rich_text_filter(self, text: str) -> dict:
+        return {"rich_text": {"contains": text}}
 
     def any(self, text: str):
-        self.basic_structure['rich_text']['contains'] = text
-        return self._build("any", self.basic_structure)
+        return self._build("any", self._make_rich_text_filter(text))
 
     def every(self, text: str):
-        self.basic_structure['rich_text']['contains'] = text
-        return self._build("every", self.basic_structure)
+        return self._build("every", self._make_rich_text_filter(text))
 
     def none(self, text: str):
-        self.basic_structure['rich_text']['contains'] = text
-        return self._build("none", self.basic_structure)
+        return self._build("none", self._make_rich_text_filter(text))
 
 
 class _SelectFilter(_PropertyFilter):
@@ -248,7 +243,6 @@ class _TimestampFilter:
             self.timestamp_type: {operator: value}
         }
 
-    # date operators
     def equals(self, date_str: str):
         return self._build("equals", date_str)
 
@@ -276,7 +270,6 @@ class _VerificationFilter(_PropertyFilter):
         return self._build("status", value)
 
 
-# ------------------ Factory ------------------
 class F:
     """Factory semplificata per creare filtri Notion senza scrivere JSON."""
 
@@ -336,7 +329,6 @@ class F:
     def verification(name: str):
         return _VerificationFilter(name, "verification")
 
-    # compound
     @staticmethod
     def and_(*filters):
         return {"and": list(filters)}

@@ -25,7 +25,6 @@ class PropertyValue(ABC):
 
     @abstractmethod
     def to_payload(self) -> dict:
-        """Returns {prop_name: {type: value}} ready for the properties payload."""
         pass
 
     @property
@@ -38,22 +37,24 @@ class PropertyValue(ABC):
 
 
 class ReadOnlyProperty(PropertyValue):
-    """Base per proprietà che non si possono scrivere via API (formula, rollup, ecc.)."""
+    """Base per proprietà non scrivibili via API."""
 
     def to_payload(self) -> dict:
         raise AttributeError(
-            f"Property '{self.name}' ({self.prop_type}) is read-only and cannot be updated."
+            f"Property '{self.name}' ({self.prop_type}) is read-only."
         )
+
+    @property
     def value(self):
-        pass
+        return None
 
     @classmethod
     def from_data(cls, name: str, prop_id: str, data: dict) -> "PropertyValue":
-        pass
+        return cls(name, prop_id, data)
 
 
 # ──────────────────────────────────────────────
-# Writable properties
+# Writable
 # ──────────────────────────────────────────────
 
 class TitleProperty(PropertyValue):
@@ -382,7 +383,7 @@ class PeopleProperty(PropertyValue):
 
 
 # ──────────────────────────────────────────────
-# Read-only properties
+# Read-only
 # ──────────────────────────────────────────────
 
 class FilesProperty(ReadOnlyProperty):
@@ -534,31 +535,149 @@ class LastEditedByProperty(ReadOnlyProperty):
 
 
 # ──────────────────────────────────────────────
+# Tipi mancanti (prima causavano ValueError nel registry)
+# ──────────────────────────────────────────────
+
+class VerificationProperty(ReadOnlyProperty):
+    """
+    Stato di verifica di una pagina.
+    Valori possibili: "verified", "unverified".
+    Non modificabile via API.
+    """
+    prop_type = "verification"
+
+    def __init__(self, name: str, prop_id: str, data: dict):
+        super().__init__(name, prop_id, data)
+        v = data.get("verification") or {}
+        self._state: Optional[str] = v.get("state")
+        self._verified_by: Optional[str] = (v.get("verified_by") or {}).get("id")
+        self._date: Optional[NDate] = NDate(v["date"]["start"]) if v.get("date") else None
+
+    @classmethod
+    def from_data(cls, name: str, prop_id: str, data: dict):
+        return cls(name, prop_id, data)
+
+    @property
+    def value(self) -> Optional[str]:
+        return self._state
+
+    @property
+    def verified_by(self) -> Optional[str]:
+        return self._verified_by
+
+    @property
+    def date(self) -> Optional[NDate]:
+        return self._date
+
+
+class ButtonProperty(ReadOnlyProperty):
+    """
+    Proprietà di tipo button. Non ha valore leggibile né scrivibile via API.
+    """
+    prop_type = "button"
+
+    @classmethod
+    def from_data(cls, name: str, prop_id: str, data: dict):
+        return cls(name, prop_id, data)
+
+    @property
+    def value(self):
+        return None
+
+
+class LocationProperty(ReadOnlyProperty):
+    """
+    Proprietà di tipo location (latitudine/longitudine).
+    Non scrivibile via API pubblica.
+    """
+    prop_type = "location"
+
+    def __init__(self, name: str, prop_id: str, data: dict):
+        super().__init__(name, prop_id, data)
+        loc = data.get("location") or {}
+        self._latitude: Optional[float] = loc.get("latitude")
+        self._longitude: Optional[float] = loc.get("longitude")
+
+    @classmethod
+    def from_data(cls, name: str, prop_id: str, data: dict):
+        return cls(name, prop_id, data)
+
+    @property
+    def value(self):
+        return {"latitude": self._latitude, "longitude": self._longitude}
+
+    @property
+    def latitude(self) -> Optional[float]:
+        return self._latitude
+
+    @property
+    def longitude(self) -> Optional[float]:
+        return self._longitude
+
+
+class PlaceProperty(ReadOnlyProperty):
+    """Proprietà di tipo place. Read-only."""
+    prop_type = "place"
+
+    @classmethod
+    def from_data(cls, name: str, prop_id: str, data: dict):
+        return cls(name, prop_id, data)
+
+    @property
+    def value(self):
+        return self._data.get("place")
+
+
+class LastVisitedTimeProperty(ReadOnlyProperty):
+    """Ultimo accesso alla pagina. Read-only."""
+    prop_type = "last_visited_time"
+
+    def __init__(self, name: str, prop_id: str, data: dict):
+        super().__init__(name, prop_id, data)
+        raw = data.get("last_visited_time")
+        self._value: Optional[NDate] = NDate(raw) if raw else None
+
+    @classmethod
+    def from_data(cls, name: str, prop_id: str, data: dict):
+        return cls(name, prop_id, data)
+
+    @property
+    def value(self) -> Optional[NDate]:
+        return self._value
+
+
+# ──────────────────────────────────────────────
 # Registry & Factory
 # ──────────────────────────────────────────────
 
 _PROP_REGISTRY: dict[str, type[PropertyValue]] = {
-    "title":            TitleProperty,
-    "rich_text":        RichTextProperty,
-    "number":           NumberProperty,
-    "checkbox":         CheckboxProperty,
-    "select":           SelectProperty,
-    "multi_select":     MultiSelectProperty,
-    "status":           StatusProperty,
-    "date":             DateProperty,
-    "url":              URLProperty,
-    "email":            EmailProperty,
-    "phone_number":     PhoneNumberProperty,
-    "relation":         RelationProperty,
-    "people":           PeopleProperty,
-    "files":            FilesProperty,
-    "formula":          FormulaProperty,
-    "rollup":           RollupProperty,
-    "unique_id":        UniqueIDProperty,
-    "created_time":     CreatedTimeProperty,
-    "last_edited_time": LastEditedTimeProperty,
-    "created_by":       CreatedByProperty,
-    "last_edited_by":   LastEditedByProperty,
+    "title":              TitleProperty,
+    "rich_text":          RichTextProperty,
+    "number":             NumberProperty,
+    "checkbox":           CheckboxProperty,
+    "select":             SelectProperty,
+    "multi_select":       MultiSelectProperty,
+    "status":             StatusProperty,
+    "date":               DateProperty,
+    "url":                URLProperty,
+    "email":              EmailProperty,
+    "phone_number":       PhoneNumberProperty,
+    "relation":           RelationProperty,
+    "people":             PeopleProperty,
+    "files":              FilesProperty,
+    "formula":            FormulaProperty,
+    "rollup":             RollupProperty,
+    "unique_id":          UniqueIDProperty,
+    "created_time":       CreatedTimeProperty,
+    "last_edited_time":   LastEditedTimeProperty,
+    "created_by":         CreatedByProperty,
+    "last_edited_by":     LastEditedByProperty,
+    # Tipi precedentemente mancanti → non più ValueError
+    "verification":       VerificationProperty,
+    "button":             ButtonProperty,
+    "location":           LocationProperty,
+    "place":              PlaceProperty,
+    "last_visited_time":  LastVisitedTimeProperty,
 }
 
 
@@ -570,6 +689,7 @@ class PropertyFactory:
         cls = _PROP_REGISTRY.get(prop_type)
         if cls is None:
             raise ValueError(
-                f"Unknown property type: '{prop_type}' for property '{name}'"
+                f"Tipo proprietà sconosciuto: '{prop_type}' per '{name}'. "
+                f"Tipi supportati: {sorted(_PROP_REGISTRY)}"
             )
         return cls.from_data(name, prop_id, data)

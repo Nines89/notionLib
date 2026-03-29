@@ -3,6 +3,7 @@ from typing import Optional
 
 from nModels.base_object import ObjInterface
 from nEndpoints import users as user_endpoint
+from utils.utils import resolve_response
 
 
 class UserError(Exception):
@@ -19,7 +20,8 @@ class NUser(ObjInterface):
         super().__init__(header, block_id)
 
     def _apply(self, data):
-        pass
+        # Normalizza subito: _raw_data è sempre un dict grezzo
+        self._raw_data = resolve_response(data)
 
     @property
     def headers(self):
@@ -42,55 +44,55 @@ class NUser(ObjInterface):
             self._refresh()
 
     def _refresh(self):
-        data = user_endpoint.get_user(self.headers, self.obj_id).response
-        self._raw_data = data.response
+        # FIX: era data.response.response — doppio unwrap errato.
+        # user_endpoint.get_user ritorna un NGET; .response è già il dict JSON.
+        result = user_endpoint.get_user(self.headers, self.obj_id)
+        self._raw_data = resolve_response(result)
 
     @property
-    def name(self):
+    def name(self) -> Optional[str]:
         self._ensure_data()
         return self._raw_data.get("name")
 
     @property
-    def id(self):
+    def id(self) -> Optional[str]:
         self._ensure_data()
         return self._raw_data.get("id")
 
     @property
-    def avatar(self):
+    def avatar(self) -> Optional[str]:
         self._ensure_data()
         return self._raw_data.get("avatar_url")
 
     @property
-    def type(self):
+    def type(self) -> Optional[str]:
         self._ensure_data()
         return self._raw_data.get("type")
 
     def __repr__(self):
-        return f"<User {self.name} as {self.type}>"
+        return f"<User '{self.name}' type={self.type}>"
 
 
 class NPerson(NUser):
     obj_type = "person"
 
     def _apply(self, data: dict):
-        # implementazione vuota ma necessaria
-        return
+        super()._apply(data)
 
     @property
-    def email(self):
+    def email(self) -> Optional[str]:
         self._ensure_data()
-        return self._raw_data["person"]["email"]
+        return self._raw_data.get("person", {}).get("email")
 
 
 class NBot(NUser):
     obj_type = "bot"
 
     def _apply(self, data: dict):
-        # implementazione vuota ma necessaria
-        return
+        super()._apply(data)
 
     @property
-    def owner_type(self):
+    def owner_type(self) -> Optional[str]:
         self._ensure_data()
         owner = self._raw_data.get("owner")
         return owner.get("type") if isinstance(owner, dict) else None
@@ -102,25 +104,27 @@ class NBotUser(NBot):
 
 class NBotWorkspace(NBot):
     @property
-    def workspace_name(self):
+    def workspace_name(self) -> Optional[str]:
         self._ensure_data()
-        return self._raw_data["workspace_name"]
+        return self._raw_data.get("workspace_name")
 
     @property
-    def workspace_id(self):
+    def workspace_id(self) -> Optional[str]:
         self._ensure_data()
-        return self._raw_data["workspace_id"]
+        return self._raw_data.get("workspace_id")
 
     @property
     def workspace_limits(self):
         self._ensure_data()
-        return self._raw_data["workspace_limits"]["max_file_upload_size_in_bytes"]
+        limits = self._raw_data.get("workspace_limits", {})
+        return limits.get("max_file_upload_size_in_bytes")
 
 
 class UserFactory:
     @staticmethod
     def create(header: dict, block_id: str) -> NUser:
-        data = user_endpoint.get_user(header, block_id).response
+        result = user_endpoint.get_user(header, block_id)
+        data = resolve_response(result)
         t = data.get("type")
         if t == "person":
             u = NPerson(header, block_id)
@@ -134,10 +138,9 @@ class UserFactory:
             else:
                 u = NBot(header, block_id)
         else:
-            raise UserError(f"Unknown User Type: {t}")
+            raise UserError(f"Tipo utente sconosciuto: '{t}'")
         u._raw_data = data
         return u
-
 
 if __name__ == "__main__":
     from client.auth import NotionApiClient

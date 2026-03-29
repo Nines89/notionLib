@@ -7,10 +7,6 @@ def handle_rate_limit(response):
         return
 
     retry = response.headers.get("Retry-After")
-    if retry is None:
-        retry = 1
-    else:
-        retry = float(retry)
-
+    retry = float(retry) if retry is not None else 1.0
     time.sleep(retry)
-    raise RateLimited("Retry limit exceeded, handled by auto-retry.")
+    raise RateLimited("Rate limit hit — auto-retry dopo sleep.")
