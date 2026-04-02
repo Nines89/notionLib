@@ -233,7 +233,7 @@ class DatabasePage(NPage):
         from client.https import NPOST
         parent_db_id = check_url_or_id(parent_db_id)
         payload: dict = {
-            "parent": {"database_id": parent_db_id},
+            "parent": {"data_source_id": parent_db_id},
             "properties": properties
         }
         if icon:

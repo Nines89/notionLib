@@ -45,7 +45,7 @@ def n_file(data: dict) -> BaseFile:
             return FileTypeFile(data['file'].get("url"), data['file'].get("expiry_time"))
         elif t == "external":
             return FileTypeExternal(data['external'].get("url"))
-        elif t == "file_uploaded":
+        elif t == "file_upload":
             return FileTypeUploaded(data['file_upload'].get("id"))
         else:
             raise ValueError(f"Unknown file type: {data}")

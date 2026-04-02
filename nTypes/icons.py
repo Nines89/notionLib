@@ -15,8 +15,27 @@ class IconFactory:
         """
         if data.get("type") == "emoji":
             return NEmojiFactory.find(data)
+        elif data.get("type") == "icon":
+            return NIcon(data)
         else:
             return n_file(data)
+
+    @staticmethod
+    def name(obj):
+        if type(obj) is NIcon:
+            return obj.name
+        elif type(obj) is NEmoji:
+            return obj.emoji
+        else:
+            return obj.url
+
+    @staticmethod
+    def color(obj):
+        if type(obj) is NIcon:
+            return obj.color
+        else:
+            return None
+
 
 class NEmoji:
     type = "emoji"
@@ -45,6 +64,50 @@ class NEmoji:
             "emoji": self._emoji,
         }
 
+
+class NIcon:
+    type = "icon"
+    def __init__(self, data: dict):
+        """
+        data = {
+              "type": "icon",
+              "icon": {
+                "name": "pizza",
+                "color": "blue"
+              }
+            }
+        """
+        self.data = data
+        self._name = self.data.get("icon").get("name")
+        self._color = self.data.get("icon").get("color")
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        self._name = value
+
+    @property
+    def color(self) -> str:
+        return self.name
+
+    @color.setter
+    def color(self, value: str):
+        col_accepted = ["gray", "lightgray", "brown", "yellow", "orange", "green", "blue", "purple", "pink", "red"]
+        if value not in col_accepted:
+            raise EmojiError(f"Expected color valuse: {''.join(x for x in col_accepted)}")
+        self._color = value
+
+    def to_payload(self) -> dict:
+        return {
+            "type": "icon",
+            "icon": {
+                "name": self._name,
+                "color": self._color,
+            },
+        }
 
 class NCustomEmoji:
     type = "custom_emoji"

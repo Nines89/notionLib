@@ -27,7 +27,7 @@ def _ensure_registry_populated():
 
     Chiamata lazy: viene eseguita una sola volta al primo NFactory.find().
     """
-    if len(_BLOCK_REGISTRY) > 2:   # paragraph + unsupported già registrati
+    if len(_BLOCK_REGISTRY) > 3:   # paragraph + unsupported già registrati + check for meetings
         return
     import nModels.blocks.paragraph       # noqa: F401
     import nModels.blocks.heading         # noqa: F401

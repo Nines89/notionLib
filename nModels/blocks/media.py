@@ -1,16 +1,29 @@
 from nModels.blocks.base_block import register_block, BlockImpl
 from nTypes import NRichList, FileTypeExternal, FileTypeFile, FileTypeUploaded, n_file
+from nTypes.files import BaseFile
 from nTypes.rich_text import simple_rich_text_list, create_rich_list
+
+
+def _resolve_file(file_object):
+    """
+    Normalizza file_object: accetta sia un dict Notion grezzo (path from_data)
+    sia un'istanza BaseFile già costruita (path create()).
+    """
+    if file_object is None:
+        return None
+    if isinstance(file_object, BaseFile):
+        return file_object
+    return n_file(file_object)
 
 
 @register_block("image")
 class Image(BlockImpl):
     type = "image"
 
-    def __init__(self, headers, block_id=None, caption: NRichList = None, file_object: dict = None):
+    def __init__(self, headers, block_id=None, caption: NRichList = None, file_object=None):
         super().__init__(headers, block_id)
         self._caption = caption or NRichList()
-        self._file_object = n_file(file_object)
+        self._file_object = _resolve_file(file_object)
 
     @classmethod
     def from_data(cls, headers, data, block_id):
@@ -62,10 +75,10 @@ class Video(BlockImpl):
     """
     type = "video"
 
-    def __init__(self, headers, block_id=None, caption: NRichList = None, file_object: dict = None):
+    def __init__(self, headers, block_id=None, caption: NRichList = None, file_object=None):
         super().__init__(headers, block_id)
         self._caption = caption or NRichList()
-        self._file_object = n_file(file_object) if file_object else None
+        self._file_object = _resolve_file(file_object)
 
     @classmethod
     def from_data(cls, headers, data, block_id):
@@ -84,7 +97,7 @@ class Video(BlockImpl):
         return cls(
             headers=None,
             caption=simple_rich_text_list(caption) if caption else NRichList(),
-            file_object=fo.to_dict(),
+            file_object=fo,
         )
 
     def to_payload(self):
@@ -131,10 +144,10 @@ class Audio(BlockImpl):
     type = "audio"
     updatable = False
 
-    def __init__(self, headers, block_id=None, caption: NRichList = None, file_object: dict = None):
+    def __init__(self, headers, block_id=None, caption: NRichList = None, file_object=None):
         super().__init__(headers, block_id)
         self._caption = caption or NRichList()
-        self._file_object = n_file(file_object) if file_object else None
+        self._file_object = _resolve_file(file_object)
 
     @classmethod
     def from_data(cls, headers, data, block_id):
@@ -259,34 +272,3 @@ class Embed(BlockImpl):
     @property
     def url(self):
         return self._url
-
-
-
-if __name__ == "__main__":
-    from client.auth import NotionApiClient
-    from nModels.blocks.base_block import NFactory
-
-    api = NotionApiClient(key="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")
-    img_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f729481e6b128c8ffeaa62669"
-    file_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2fbb7a8f7294807ca2c0fde21cc2b968"
-    embed_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2fbb7a8f72948021a338ef1ea3216203"
-    # Partendo da una foto
-    # recuperiamo tutto e cambiamo la caption
-    #########################################  IMG ###################################################################
-    # blk = NFactory.find(api.headers, img_id)
-    # blk.caption = "Sostituiamo una caption"
-    # new_image = FileTypeExternal(url="https://m.media-amazon.com/images/I/61EHasGroeL._UF1000,1000_QL80_.jpg")
-    # blk.file_object = new_image
-    # print(blk.to_payload())
-    # blk.update()
-    ###################################################################################################################
-    #########################################  FILE ###################################################################
-    # blk = NFactory.find(api.headers, file_id)
-    # print(blk.block_type)
-    # print(blk.name)
-    # print(blk.file_object.url)
-    # print(blk.file_object.expiry_time)
-    ###################################################################################################################
-    #########################################  EMBED ###################################################################
-    blk = NFactory.find(api.headers, embed_id)
-    print(blk.url)
