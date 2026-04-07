@@ -25,7 +25,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Notion Automation")
-        self.resize(1200, 820)
+        self.resize(1320, 860)
         self.setMinimumSize(900, 600)
         self._workers: list = []
         self._build_ui()
@@ -37,22 +37,11 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # ── Sidebar ───────────────────────────────────────────────
-        self._sidebar = SidebarWidget()
-        self._sidebar.connect_requested.connect(self._on_connect)
-        self._sidebar.disconnect_requested.connect(self._on_disconnect)
-        root.addWidget(self._sidebar)
-
-        sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.VLine)
-        sep.setStyleSheet("color: #E3E2DE;")
-        root.addWidget(sep)
-
-        # ── Tabs ──────────────────────────────────────────────────
+        # ── Area contenuto principale ─────────────────────────────
         content = QWidget()
         content.setObjectName("ContentArea")
         content_lay = QHBoxLayout(content)
-        content_lay.setContentsMargins(18, 16, 18, 14)
+        content_lay.setContentsMargins(20, 18, 20, 14)
         content_lay.setSpacing(0)
 
         self._tabs = QTabWidget()
@@ -61,23 +50,34 @@ class MainWindow(QMainWindow):
 
         # Tab 1: Workspace
         self._ws_tab = WorkspaceTab()
-        self._tabs.addTab(self._ws_tab, "  🔍  Workspace  ")
+        self._tabs.addTab(self._ws_tab, "  🪐 Panorama  ")
 
         # Tab 2: Automazioni (con tile + stack interno)
         self._auto_tab = AutomationsTab()
-        self._tabs.addTab(self._auto_tab, "  ⚙️  Automazioni  ")
+        self._tabs.addTab(self._auto_tab, "  🤖 Flussi  ")
 
         # Registra i tool nell'AutomationsTab
         self._copy_tool = CopyDatasourceTool()
         self._auto_tab.register_tool(
-            icon        = "🔄",
-            title       = "Copia DataSource",
-            description = "Leggi da un datasource, filtra, ordina e scrivi in un altro.",
+            icon        = "🧠",
+            title       = "Sync DataSource",
+            description = "Trasforma e sincronizza record tra due datasource con filtri avanzati.",
             tool_widget = self._copy_tool,
         )
 
         content_lay.addWidget(self._tabs)
         root.addWidget(content, stretch=1)
+
+        # ── Sidebar a destra (layout rinnovato) ───────────────────
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.VLine)
+        sep.setStyleSheet("color: #1F2A40;")
+        root.addWidget(sep)
+
+        self._sidebar = SidebarWidget()
+        self._sidebar.connect_requested.connect(self._on_connect)
+        self._sidebar.disconnect_requested.connect(self._on_disconnect)
+        root.addWidget(self._sidebar)
 
         # ── Connessioni segnali ───────────────────────────────────
         self._copy_tool.schema_needed.connect(self._on_schema_needed)

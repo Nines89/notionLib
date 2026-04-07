@@ -17,19 +17,26 @@ class SidebarWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("Sidebar")
-        self.setFixedWidth(240)
+        self.setFixedWidth(290)
         self._build_ui()
 
     def _build_ui(self):
         lay = QVBoxLayout(self)
         lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         lay.setSpacing(0)
-        lay.setContentsMargins(16, 24, 16, 16)
+        lay.setContentsMargins(18, 24, 18, 16)
 
-        logo = QLabel("🔮 Notion\nAutomation")
+        logo = QLabel("NOVA CONTROL")
         logo.setObjectName("Title")
         lay.addWidget(logo)
-        lay.addSpacing(4)
+        chip = QLabel("● ONLINE WORKSPACE DESIGN")
+        chip.setStyleSheet(
+            "font-size: 10px; font-weight: 700; letter-spacing: 0.8px; "
+            "padding: 5px 8px; border-radius: 8px; color: #22D3EE; "
+            "background: #102B38; border: 1px solid #1E495F;"
+        )
+        lay.addWidget(chip)
+        lay.addSpacing(8)
         lay.addWidget(self._sep())
         lay.addSpacing(20)
 
@@ -42,9 +49,9 @@ class SidebarWidget(QWidget):
         lay.addStretch()
 
         hint = QLabel(
-            "💡 In Notion apri ogni database\n"
-            "   ··· → Connetti a →\n"
-            "   seleziona la tua integrazione"
+            "💡 Suggerimento rapido\n"
+            "Apri ogni database in Notion →\n"
+            "⋯ → Connetti a → integrazione"
         )
         hint.setWordWrap(True)
         hint.setObjectName("Muted")
@@ -56,8 +63,8 @@ class SidebarWidget(QWidget):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(8)
 
-        lbl = QLabel("API Key")
-        lbl.setStyleSheet("font-weight: 600; font-size: 12px; color: #4D556B;")
+        lbl = QLabel("Token API")
+        lbl.setStyleSheet("font-weight: 700; font-size: 11px; color: #A3B3CE; text-transform: uppercase;")
 
         self._key_input = QLineEdit()
         self._key_input.setPlaceholderText("ntn_...")
@@ -65,7 +72,7 @@ class SidebarWidget(QWidget):
         self._key_input.setFixedHeight(36)
         self._key_input.returnPressed.connect(self._on_connect_clicked)
 
-        self._connect_btn = QPushButton("Connetti")
+        self._connect_btn = QPushButton("⚡ Connetti")
         self._connect_btn.setObjectName("PrimaryBtn")
         self._connect_btn.setFixedHeight(36)
         self._connect_btn.clicked.connect(self._on_connect_clicked)
@@ -75,7 +82,7 @@ class SidebarWidget(QWidget):
         self._error_lbl.setObjectName("Error")
         self._error_lbl.hide()
 
-        api_hint = QLabel("Trovi la chiave su\nnotion.so/my-integrations")
+        api_hint = QLabel("Token disponibile in\nnotion.so/my-integrations")
         api_hint.setObjectName("Muted")
 
         lay.addWidget(lbl)
@@ -98,7 +105,7 @@ class SidebarWidget(QWidget):
         self._summary_lbl = QLabel()
         self._summary_lbl.setStyleSheet("font-size: 12px; color: #787774;")
 
-        disc_btn = QPushButton("Disconnetti")
+        disc_btn = QPushButton("⏻ Disconnetti")
         disc_btn.setFixedHeight(32)
         disc_btn.clicked.connect(self.disconnect_requested.emit)
 
@@ -112,7 +119,7 @@ class SidebarWidget(QWidget):
     def _sep() -> QFrame:
         line = QFrame()
         line.setFrameShape(QFrame.Shape.HLine)
-        line.setStyleSheet("color: #E3E2DE;")
+        line.setStyleSheet("color: #24314B;")
         return line
 
     def _on_connect_clicked(self):

@@ -5,20 +5,20 @@ Un unico posto da modificare per cambiare look & feel.
 """
 
 # Palette colori
-C_BG          = "#F4F6FB"     # sfondo principale
-C_SURFACE     = "#FFFFFF"     # superfici card/groupbox
-C_BORDER      = "#E4E9F2"     # bordi leggeri
-C_BORDER_SOFT = "#EEF2F9"     # bordi secondari
-C_ACCENT      = "#4F46E5"     # indigo moderno
-C_ACCENT_HO   = "#4338CA"     # hover accent
-C_ACCENT_SOFT = "#EEF0FF"     # pill/focus delicato
-C_DANGER      = "#DC4A56"     # rosso rimozione
-C_SUCCESS     = "#1B9C62"     # verde ok
-C_TEXT        = "#151B2C"     # testo principale
-C_MUTED       = "#6D7487"     # testo secondario
-C_SIDEBAR     = "#EEF2F9"     # sfondo sidebar
-C_HOVER       = "#F3F6FC"     # hover generico
-C_SEL         = "#E8ECFF"     # sfondo selezione/focus
+C_BG          = "#090D18"     # sfondo principale
+C_SURFACE     = "#11182A"     # superfici card/groupbox
+C_BORDER      = "#25304A"     # bordi leggeri
+C_BORDER_SOFT = "#1A2235"     # bordi secondari
+C_ACCENT      = "#22D3EE"     # cyan moderno
+C_ACCENT_HO   = "#06B6D4"     # hover accent
+C_ACCENT_SOFT = "#102B38"     # focus delicato
+C_DANGER      = "#F87171"     # rosso rimozione
+C_SUCCESS     = "#34D399"     # verde ok
+C_TEXT        = "#E8EEF9"     # testo principale
+C_MUTED       = "#97A3BA"     # testo secondario
+C_SIDEBAR     = "#0C1424"     # sfondo sidebar
+C_HOVER       = "#18253D"     # hover generico
+C_SEL         = "#173246"     # sfondo selezione/focus
 
 
 STYLESHEET = f"""
@@ -33,7 +33,8 @@ QMainWindow, QWidget {{
 }}
 
 #ContentArea {{
-    background-color: transparent;
+    background-color: #0A1120;
+    border-left: 1px solid {C_BORDER_SOFT};
 }}
 
 
@@ -41,7 +42,7 @@ QMainWindow, QWidget {{
 
 #Sidebar {{
     background-color: {C_SIDEBAR};
-    border-right: 1px solid {C_BORDER_SOFT};
+    border-left: 1px solid {C_BORDER_SOFT};
     border-radius: 0px;
 }}
 
@@ -52,7 +53,7 @@ QTabWidget::pane {{
     border: 1px solid {C_BORDER};
     border-radius: 14px;
     background: {C_SURFACE};
-    padding: 8px;
+    padding: 10px;
 }}
 
 QTabBar::tab {{
@@ -68,14 +69,14 @@ QTabBar::tab {{
 
 QTabBar::tab:selected {{
     color: {C_ACCENT};
-    border: 1px solid #D9DEFE;
+    border: 1px solid #2A4D5B;
     background: {C_ACCENT_SOFT};
 }}
 
 QTabBar::tab:hover:!selected {{
     color: {C_TEXT};
-    background: #F8FAFF;
-    border-color: #DDE3EF;
+    background: #1D2E4B;
+    border-color: #355077;
 }}
 
 
@@ -126,7 +127,7 @@ QPushButton:hover {{
 }}
 
 QPushButton:pressed {{
-    background-color: #E9EEF8;
+    background-color: #21314F;
 }}
 
 QPushButton:disabled {{
@@ -138,7 +139,7 @@ QPushButton:disabled {{
 /* Pulsante primario (Connetti, Genera, Esegui) */
 QPushButton#PrimaryBtn {{
     background-color: {C_ACCENT};
-    color: white;
+    color: #07121E;
     border: 1px solid {C_ACCENT};
     font-weight: 600;
 }}
@@ -148,8 +149,8 @@ QPushButton#PrimaryBtn:hover {{
 }}
 
 QPushButton#PrimaryBtn:disabled {{
-    background-color: #A8C4E8;
-    color: white;
+    background-color: #2F7986;
+    color: #0D1B2B;
 }}
 
 /* Pulsante rimozione ✕ */
@@ -164,7 +165,7 @@ QPushButton#RemoveBtn {{
 
 QPushButton#RemoveBtn:hover {{
     color: {C_DANGER};
-    background-color: #FDF0F0;
+    background-color: #351A28;
     border-radius: 4px;
 }}
 
@@ -182,7 +183,7 @@ QLineEdit, QTextEdit, QDoubleSpinBox {{
 
 QLineEdit:focus, QTextEdit:focus, QDoubleSpinBox:focus {{
     border: 1.5px solid {C_ACCENT};
-    background-color: #FBFCFF;
+    background-color: #152238;
 }}
 
 QLineEdit::placeholder {{
@@ -202,7 +203,7 @@ QComboBox {{
 }}
 
 QComboBox:hover {{
-    border-color: #BDBDBD;
+    border-color: #40628E;
 }}
 
 QComboBox:focus {{
@@ -238,7 +239,7 @@ QTreeWidget {{
     background-color: {C_SURFACE};
     border: 1px solid {C_BORDER};
     border-radius: 12px;
-    alternate-background-color: #FAFBFE;
+    alternate-background-color: #141D31;
     outline: none;
 }}
 
@@ -257,7 +258,7 @@ QTreeWidget::item:hover {{
 }}
 
 QHeaderView::section {{
-    background-color: #F8FAFF;
+    background-color: #162135;
     border: none;
     border-bottom: 1px solid {C_BORDER};
     padding: 6px 8px;
@@ -281,13 +282,13 @@ QScrollBar:vertical {{
 }}
 
 QScrollBar::handle:vertical {{
-    background: #CCD5E6;
+    background: #355179;
     border-radius: 4px;
     min-height: 24px;
 }}
 
 QScrollBar::handle:vertical:hover {{
-    background: #B3C0D9;
+    background: #4A6C9C;
 }}
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
@@ -300,7 +301,7 @@ QScrollBar:horizontal {{
 }}
 
 QScrollBar::handle:horizontal {{
-    background: #CCD5E6;
+    background: #355179;
     border-radius: 4px;
     min-width: 24px;
 }}
@@ -360,7 +361,7 @@ QRadioButton::indicator:checked {{
 /* ─── StatusBar ───────────────────────────────────────────────────── */
 
 QStatusBar {{
-    background-color: #F8FAFF;
+    background-color: #0D1628;
     border-top: 1px solid {C_BORDER_SOFT};
     color: {C_MUTED};
     font-size: 12px;

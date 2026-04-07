@@ -22,7 +22,7 @@ class _MetricCard(QWidget):
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
         self.setStyleSheet(
-            "background: #FFFFFF; border: 1px solid #E4E9F2; border-radius: 14px;"
+            "background: #101A2C; border: 1px solid #23304A; border-radius: 14px;"
         )
         self.setFixedSize(130, 72)
         lay = QVBoxLayout(self)
@@ -30,11 +30,11 @@ class _MetricCard(QWidget):
         lay.setSpacing(2)
         self._num = QLabel("0")
         self._num.setStyleSheet(
-            "font-size: 28px; font-weight: 700; color: #1B2236; border: none;"
+            "font-size: 28px; font-weight: 700; color: #E7EEFA; border: none;"
         )
         lbl = QLabel(title)
         lbl.setStyleSheet(
-            "font-size: 11px; font-weight: 600; color: #6D7487; border: none;"
+            "font-size: 11px; font-weight: 700; color: #9DACCA; border: none;"
         )
         lay.addWidget(self._num)
         lay.addWidget(lbl)
@@ -60,7 +60,7 @@ class WorkspaceTab(QWidget):
         lay.setContentsMargins(24, 24, 24, 24)
         lay.setSpacing(20)
 
-        title = QLabel("Workspace")
+        title = QLabel("Panorama Workspace")
         title.setObjectName("Title")
         lay.addWidget(title)
 
@@ -69,9 +69,9 @@ class WorkspaceTab(QWidget):
         mlay    = QHBoxLayout(metrics)
         mlay.setContentsMargins(0, 0, 0, 0)
         mlay.setSpacing(12)
-        self._pg_card = _MetricCard("Pagine")
-        self._db_card = _MetricCard("Database")
-        self._ds_card = _MetricCard("DataSource")
+        self._pg_card = _MetricCard("Pagine ✨")
+        self._db_card = _MetricCard("Database 🧩")
+        self._ds_card = _MetricCard("DataSource 🔗")
         mlay.addWidget(self._pg_card)
         mlay.addWidget(self._db_card)
         mlay.addWidget(self._ds_card)
@@ -85,7 +85,7 @@ class WorkspaceTab(QWidget):
 
         tree_lbl = QLabel("Struttura  —  tasto destro per le azioni")
         tree_lbl.setStyleSheet(
-            "font-size: 12px; font-weight: 600; color: #6D7487; "
+            "font-size: 12px; font-weight: 700; color: #A5B3CC; "
             "text-transform: uppercase; letter-spacing: 0.5px;"
         )
         lay.addWidget(tree_lbl)
@@ -128,23 +128,23 @@ class WorkspaceTab(QWidget):
         menu = QMenu(self)
         menu.setStyleSheet("""
             QMenu {
-                background: white;
-                border: 1px solid #E3E2DE;
-                border-radius: 8px;
+                background: #10192B;
+                border: 1px solid #23314B;
+                border-radius: 10px;
                 padding: 4px;
             }
             QMenu::item {
                 padding: 7px 20px;
                 border-radius: 4px;
                 font-size: 13px;
-                color: #1A1A1A;
+                color: #E7EEFA;
             }
             QMenu::item:selected {
-                background: #F0EFEC;
+                background: #1A2A45;
             }
             QMenu::separator {
                 height: 1px;
-                background: #E3E2DE;
+                background: #23314B;
                 margin: 4px 10px;
             }
         """)

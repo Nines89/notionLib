@@ -31,28 +31,28 @@ class _Tile(QWidget):
         super().__init__(parent)
         self._on_click = on_click
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setFixedSize(220, 150)
+        self.setFixedSize(260, 170)
         self._build_ui(icon, title, description)
         self._set_normal_style()
 
     def _build_ui(self, icon, title, description):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(18, 18, 18, 18)
+        lay.setContentsMargins(20, 18, 20, 18)
         lay.setSpacing(8)
 
         icon_lbl = QLabel(icon)
-        icon_lbl.setStyleSheet("font-size: 28px; background: transparent;")
+        icon_lbl.setStyleSheet("font-size: 30px; background: transparent;")
 
         title_lbl = QLabel(title)
         title_lbl.setStyleSheet(
-            "font-size: 13px; font-weight: 700; "
-            "color: #1A1A1A; background: transparent;"
+            "font-size: 14px; font-weight: 700; "
+            "color: #E8EEF9; background: transparent;"
         )
         title_lbl.setWordWrap(True)
 
         desc_lbl = QLabel(description)
         desc_lbl.setStyleSheet(
-            "font-size: 11px; color: #787774; background: transparent;"
+            "font-size: 11px; color: #A0ACC2; background: transparent;"
         )
         desc_lbl.setWordWrap(True)
 
@@ -63,13 +63,13 @@ class _Tile(QWidget):
 
     def _set_normal_style(self):
         self.setStyleSheet(
-            "QWidget { background: white; border: 1px solid #E3E2DE; "
+            "QWidget { background: #0F192C; border: 1px solid #24314A; "
             "border-radius: 12px; }"
         )
 
     def _set_hover_style(self):
         self.setStyleSheet(
-            "QWidget { background: #F7F7F5; border: 1.5px solid #2F80ED; "
+            "QWidget { background: #15253E; border: 1.5px solid #22D3EE; "
             "border-radius: 12px; }"
         )
 
@@ -102,17 +102,17 @@ class _HomeView(QWidget):
         lay.setContentsMargins(24, 24, 24, 24)
         lay.setSpacing(20)
 
-        title = QLabel("Automazioni")
-        title.setStyleSheet("font-size: 22px; font-weight: 700; color: #1A1A1A;")
+        title = QLabel("Flussi intelligenti")
+        title.setStyleSheet("font-size: 24px; font-weight: 800; color: #E8EEF9;")
         lay.addWidget(title)
 
-        subtitle = QLabel("Scegli uno strumento per iniziare.")
-        subtitle.setStyleSheet("font-size: 13px; color: #787774;")
+        subtitle = QLabel("Scegli un modulo e crea una pipeline in pochi clic.")
+        subtitle.setStyleSheet("font-size: 13px; color: #9AA8C1;")
         lay.addWidget(subtitle)
 
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("color: #E3E2DE;")
+        sep.setStyleSheet("color: #24314B;")
         lay.addWidget(sep)
 
         self._grid = QGridLayout()
@@ -146,30 +146,30 @@ class _ToolView(QWidget):
 
         # ── Header ────────────────────────────────────────────────
         header = QWidget()
-        header.setFixedHeight(48)
+        header.setFixedHeight(52)
         header.setStyleSheet(
-            "background: white; border-bottom: 1px solid #E3E2DE;"
+            "background: #0F192C; border-bottom: 1px solid #23314A;"
         )
         hlay = QHBoxLayout(header)
         hlay.setContentsMargins(16, 0, 16, 0)
         hlay.setSpacing(12)
 
-        back_btn = QPushButton("← Indietro")
+        back_btn = QPushButton("← Torna ai flussi")
         back_btn.setStyleSheet(
             "QPushButton { background: transparent; border: none; "
-            "color: #2F80ED; font-size: 13px; font-weight: 600; }"
-            "QPushButton:hover { color: #1A6DD4; }"
+            "color: #22D3EE; font-size: 13px; font-weight: 700; }"
+            "QPushButton:hover { color: #7BE6F5; }"
         )
         back_btn.clicked.connect(on_back)
 
         sep = QFrame()
         sep.setFrameShape(QFrame.Shape.VLine)
-        sep.setStyleSheet("color: #E3E2DE;")
+        sep.setStyleSheet("color: #24314B;")
         sep.setFixedHeight(20)
 
         header_title = QLabel(f"{icon}  {title}")
         header_title.setStyleSheet(
-            "font-size: 14px; font-weight: 600; color: #1A1A1A;"
+            "font-size: 14px; font-weight: 700; color: #E8EEF9;"
         )
 
         hlay.addWidget(back_btn)
