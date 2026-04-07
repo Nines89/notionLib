@@ -49,6 +49,12 @@ class MainWindow(QMainWindow):
         root.addWidget(sep)
 
         # ── Tabs ──────────────────────────────────────────────────
+        content = QWidget()
+        content.setObjectName("ContentArea")
+        content_lay = QHBoxLayout(content)
+        content_lay.setContentsMargins(18, 16, 18, 14)
+        content_lay.setSpacing(0)
+
         self._tabs = QTabWidget()
         self._tabs.setDocumentMode(True)
         self._tabs.setEnabled(False)
@@ -70,7 +76,8 @@ class MainWindow(QMainWindow):
             tool_widget = self._copy_tool,
         )
 
-        root.addWidget(self._tabs, stretch=1)
+        content_lay.addWidget(self._tabs)
+        root.addWidget(content, stretch=1)
 
         # ── Connessioni segnali ───────────────────────────────────
         self._copy_tool.schema_needed.connect(self._on_schema_needed)

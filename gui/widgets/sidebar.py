@@ -27,9 +27,7 @@ class SidebarWidget(QWidget):
         lay.setContentsMargins(16, 24, 16, 16)
 
         logo = QLabel("🔮 Notion\nAutomation")
-        logo.setStyleSheet(
-            "font-size: 18px; font-weight: 700; color: #1A1A1A; padding-bottom: 6px;"
-        )
+        logo.setObjectName("Title")
         lay.addWidget(logo)
         lay.addSpacing(4)
         lay.addWidget(self._sep())
@@ -49,7 +47,7 @@ class SidebarWidget(QWidget):
             "   seleziona la tua integrazione"
         )
         hint.setWordWrap(True)
-        hint.setStyleSheet("font-size: 11px; color: #787774; line-height: 1.5;")
+        hint.setObjectName("Muted")
         lay.addWidget(hint)
 
     def _build_login_area(self) -> QWidget:
@@ -59,7 +57,7 @@ class SidebarWidget(QWidget):
         lay.setSpacing(8)
 
         lbl = QLabel("API Key")
-        lbl.setStyleSheet("font-weight: 600; font-size: 12px;")
+        lbl.setStyleSheet("font-weight: 600; font-size: 12px; color: #4D556B;")
 
         self._key_input = QLineEdit()
         self._key_input.setPlaceholderText("ntn_...")
@@ -74,11 +72,11 @@ class SidebarWidget(QWidget):
 
         self._error_lbl = QLabel()
         self._error_lbl.setWordWrap(True)
-        self._error_lbl.setStyleSheet("color: #EB5757; font-size: 12px;")
+        self._error_lbl.setObjectName("Error")
         self._error_lbl.hide()
 
         api_hint = QLabel("Trovi la chiave su\nnotion.so/my-integrations")
-        api_hint.setStyleSheet("font-size: 11px; color: #787774;")
+        api_hint.setObjectName("Muted")
 
         lay.addWidget(lbl)
         lay.addWidget(self._key_input)

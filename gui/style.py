@@ -5,18 +5,20 @@ Un unico posto da modificare per cambiare look & feel.
 """
 
 # Palette colori
-C_BG        = "#F7F7F5"       # sfondo principale (bianco caldo)
-C_SURFACE   = "#FFFFFF"       # superfici card/groupbox
-C_BORDER    = "#E3E2DE"       # bordi leggeri
-C_ACCENT    = "#2F80ED"       # blu azione (pulsanti primari)
-C_ACCENT_HO = "#1A6DD4"       # hover accent
-C_DANGER    = "#EB5757"       # rosso rimozione
-C_SUCCESS   = "#27AE60"       # verde ok
-C_TEXT      = "#1A1A1A"       # testo principale
-C_MUTED     = "#787774"       # testo secondario
-C_SIDEBAR   = "#F0EFEC"       # sfondo sidebar
-C_HOVER     = "#EBEBEA"       # hover generico
-C_SEL       = "#E8F0FD"       # sfondo selezione/focus
+C_BG          = "#F4F6FB"     # sfondo principale
+C_SURFACE     = "#FFFFFF"     # superfici card/groupbox
+C_BORDER      = "#E4E9F2"     # bordi leggeri
+C_BORDER_SOFT = "#EEF2F9"     # bordi secondari
+C_ACCENT      = "#4F46E5"     # indigo moderno
+C_ACCENT_HO   = "#4338CA"     # hover accent
+C_ACCENT_SOFT = "#EEF0FF"     # pill/focus delicato
+C_DANGER      = "#DC4A56"     # rosso rimozione
+C_SUCCESS     = "#1B9C62"     # verde ok
+C_TEXT        = "#151B2C"     # testo principale
+C_MUTED       = "#6D7487"     # testo secondario
+C_SIDEBAR     = "#EEF2F9"     # sfondo sidebar
+C_HOVER       = "#F3F6FC"     # hover generico
+C_SEL         = "#E8ECFF"     # sfondo selezione/focus
 
 
 STYLESHEET = f"""
@@ -30,12 +32,16 @@ QMainWindow, QWidget {{
     font-size: 13px;
 }}
 
+#ContentArea {{
+    background-color: transparent;
+}}
+
 
 /* ─── Sidebar ────────────────────────────────────────────────────── */
 
 #Sidebar {{
     background-color: {C_SIDEBAR};
-    border-right: 1px solid {C_BORDER};
+    border-right: 1px solid {C_BORDER_SOFT};
     border-radius: 0px;
 }}
 
@@ -44,31 +50,32 @@ QMainWindow, QWidget {{
 
 QTabWidget::pane {{
     border: 1px solid {C_BORDER};
-    border-radius: 8px;
+    border-radius: 14px;
     background: {C_SURFACE};
-    padding: 4px;
+    padding: 8px;
 }}
 
 QTabBar::tab {{
-    background: transparent;
+    background: {C_HOVER};
     color: {C_MUTED};
-    padding: 8px 20px;
-    margin-right: 2px;
-    border-bottom: 2px solid transparent;
+    padding: 9px 18px;
+    margin-right: 6px;
+    border: 1px solid {C_BORDER};
+    border-radius: 10px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
 }}
 
 QTabBar::tab:selected {{
     color: {C_ACCENT};
-    border-bottom: 2px solid {C_ACCENT};
-    background: transparent;
+    border: 1px solid #D9DEFE;
+    background: {C_ACCENT_SOFT};
 }}
 
 QTabBar::tab:hover:!selected {{
     color: {C_TEXT};
-    background: {C_HOVER};
-    border-radius: 6px 6px 0 0;
+    background: #F8FAFF;
+    border-color: #DDE3EF;
 }}
 
 
@@ -77,9 +84,9 @@ QTabBar::tab:hover:!selected {{
 QGroupBox {{
     background-color: {C_SURFACE};
     border: 1px solid {C_BORDER};
-    border-radius: 8px;
-    margin-top: 14px;
-    padding: 16px 14px 14px 14px;
+    border-radius: 12px;
+    margin-top: 16px;
+    padding: 18px 16px 16px 16px;
     font-weight: 600;
     font-size: 12px;
     color: {C_MUTED};
@@ -103,22 +110,23 @@ QGroupBox::title {{
 /* ─── Pulsanti ────────────────────────────────────────────────────── */
 
 QPushButton {{
-    background-color: {C_HOVER};
+    background-color: {C_SURFACE};
     color: {C_TEXT};
     border: 1px solid {C_BORDER};
-    border-radius: 6px;
-    padding: 6px 14px;
+    border-radius: 10px;
+    padding: 7px 14px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
     min-height: 28px;
 }}
 
 QPushButton:hover {{
-    background-color: {C_BORDER};
+    background-color: {C_HOVER};
+    border-color: #D6DDEA;
 }}
 
 QPushButton:pressed {{
-    background-color: #D8D7D3;
+    background-color: #E9EEF8;
 }}
 
 QPushButton:disabled {{
@@ -131,7 +139,7 @@ QPushButton:disabled {{
 QPushButton#PrimaryBtn {{
     background-color: {C_ACCENT};
     color: white;
-    border: none;
+    border: 1px solid {C_ACCENT};
     font-weight: 600;
 }}
 
@@ -166,7 +174,7 @@ QPushButton#RemoveBtn:hover {{
 QLineEdit, QTextEdit, QDoubleSpinBox {{
     background-color: {C_SURFACE};
     border: 1px solid {C_BORDER};
-    border-radius: 6px;
+    border-radius: 10px;
     padding: 6px 10px;
     color: {C_TEXT};
     selection-background-color: {C_SEL};
@@ -174,7 +182,7 @@ QLineEdit, QTextEdit, QDoubleSpinBox {{
 
 QLineEdit:focus, QTextEdit:focus, QDoubleSpinBox:focus {{
     border: 1.5px solid {C_ACCENT};
-    background-color: {C_SURFACE};
+    background-color: #FBFCFF;
 }}
 
 QLineEdit::placeholder {{
@@ -187,7 +195,7 @@ QLineEdit::placeholder {{
 QComboBox {{
     background-color: {C_SURFACE};
     border: 1px solid {C_BORDER};
-    border-radius: 6px;
+    border-radius: 10px;
     padding: 5px 10px;
     color: {C_TEXT};
     min-height: 28px;
@@ -229,14 +237,14 @@ QComboBox QAbstractItemView {{
 QTreeWidget {{
     background-color: {C_SURFACE};
     border: 1px solid {C_BORDER};
-    border-radius: 8px;
-    alternate-background-color: #FAFAF8;
+    border-radius: 12px;
+    alternate-background-color: #FAFBFE;
     outline: none;
 }}
 
 QTreeWidget::item {{
-    padding: 5px 4px;
-    border-radius: 4px;
+    padding: 7px 6px;
+    border-radius: 6px;
 }}
 
 QTreeWidget::item:selected {{
@@ -249,7 +257,7 @@ QTreeWidget::item:hover {{
 }}
 
 QHeaderView::section {{
-    background-color: {C_BG};
+    background-color: #F8FAFF;
     border: none;
     border-bottom: 1px solid {C_BORDER};
     padding: 6px 8px;
@@ -273,13 +281,13 @@ QScrollBar:vertical {{
 }}
 
 QScrollBar::handle:vertical {{
-    background: {C_BORDER};
+    background: #CCD5E6;
     border-radius: 4px;
     min-height: 24px;
 }}
 
 QScrollBar::handle:vertical:hover {{
-    background: #BDBDBD;
+    background: #B3C0D9;
 }}
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
@@ -292,7 +300,7 @@ QScrollBar:horizontal {{
 }}
 
 QScrollBar::handle:horizontal {{
-    background: {C_BORDER};
+    background: #CCD5E6;
     border-radius: 4px;
     min-width: 24px;
 }}
@@ -306,7 +314,7 @@ QLabel {{
 }}
 
 QLabel#Title {{
-    font-size: 20px;
+    font-size: 22px;
     font-weight: 700;
     color: {C_TEXT};
     padding-bottom: 4px;
@@ -352,8 +360,8 @@ QRadioButton::indicator:checked {{
 /* ─── StatusBar ───────────────────────────────────────────────────── */
 
 QStatusBar {{
-    background-color: {C_SIDEBAR};
-    border-top: 1px solid {C_BORDER};
+    background-color: #F8FAFF;
+    border-top: 1px solid {C_BORDER_SOFT};
     color: {C_MUTED};
     font-size: 12px;
     padding: 2px 8px;
@@ -363,7 +371,7 @@ QStatusBar {{
 /* ─── Splitter ────────────────────────────────────────────────────── */
 
 QSplitter::handle {{
-    background: {C_BORDER};
+    background: {C_BORDER_SOFT};
     width: 1px;
 }}
 

@@ -22,7 +22,7 @@ class _MetricCard(QWidget):
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
         self.setStyleSheet(
-            "background: white; border: 1px solid #E3E2DE; border-radius: 10px;"
+            "background: #FFFFFF; border: 1px solid #E4E9F2; border-radius: 14px;"
         )
         self.setFixedSize(130, 72)
         lay = QVBoxLayout(self)
@@ -30,11 +30,11 @@ class _MetricCard(QWidget):
         lay.setSpacing(2)
         self._num = QLabel("0")
         self._num.setStyleSheet(
-            "font-size: 28px; font-weight: 700; color: #1A1A1A; border: none;"
+            "font-size: 28px; font-weight: 700; color: #1B2236; border: none;"
         )
         lbl = QLabel(title)
         lbl.setStyleSheet(
-            "font-size: 11px; font-weight: 600; color: #787774; border: none;"
+            "font-size: 11px; font-weight: 600; color: #6D7487; border: none;"
         )
         lay.addWidget(self._num)
         lay.addWidget(lbl)
@@ -61,7 +61,7 @@ class WorkspaceTab(QWidget):
         lay.setSpacing(20)
 
         title = QLabel("Workspace")
-        title.setStyleSheet("font-size: 22px; font-weight: 700; color: #1A1A1A;")
+        title.setObjectName("Title")
         lay.addWidget(title)
 
         # ── Metriche ──────────────────────────────────────────────
@@ -85,7 +85,7 @@ class WorkspaceTab(QWidget):
 
         tree_lbl = QLabel("Struttura  —  tasto destro per le azioni")
         tree_lbl.setStyleSheet(
-            "font-size: 12px; font-weight: 600; color: #787774; "
+            "font-size: 12px; font-weight: 600; color: #6D7487; "
             "text-transform: uppercase; letter-spacing: 0.5px;"
         )
         lay.addWidget(tree_lbl)
