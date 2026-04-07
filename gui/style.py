@@ -5,20 +5,20 @@ Un unico posto da modificare per cambiare look & feel.
 """
 
 # Palette colori
-C_BG          = "#090D18"     # sfondo principale
-C_SURFACE     = "#11182A"     # superfici card/groupbox
-C_BORDER      = "#25304A"     # bordi leggeri
-C_BORDER_SOFT = "#1A2235"     # bordi secondari
+C_BG          = "#111827"     # sfondo principale (più chiaro)
+C_SURFACE     = "#1A2438"     # superfici card/groupbox
+C_BORDER      = "#344866"     # bordi leggeri
+C_BORDER_SOFT = "#27364E"     # bordi secondari
 C_ACCENT      = "#22D3EE"     # cyan moderno
 C_ACCENT_HO   = "#06B6D4"     # hover accent
-C_ACCENT_SOFT = "#102B38"     # focus delicato
+C_ACCENT_SOFT = "#163648"     # focus delicato
 C_DANGER      = "#F87171"     # rosso rimozione
 C_SUCCESS     = "#34D399"     # verde ok
 C_TEXT        = "#E8EEF9"     # testo principale
 C_MUTED       = "#97A3BA"     # testo secondario
-C_SIDEBAR     = "#0C1424"     # sfondo sidebar
-C_HOVER       = "#18253D"     # hover generico
-C_SEL         = "#173246"     # sfondo selezione/focus
+C_SIDEBAR     = "#162033"     # sfondo sidebar
+C_HOVER       = "#23324C"     # hover generico
+C_SEL         = "#214158"     # sfondo selezione/focus
 
 
 STYLESHEET = f"""
@@ -33,8 +33,7 @@ QMainWindow, QWidget {{
 }}
 
 #ContentArea {{
-    background-color: #0A1120;
-    border-left: 1px solid {C_BORDER_SOFT};
+    background-color: #121B2C;
 }}
 
 
@@ -42,7 +41,7 @@ QMainWindow, QWidget {{
 
 #Sidebar {{
     background-color: {C_SIDEBAR};
-    border-left: 1px solid {C_BORDER_SOFT};
+    border-right: 1px solid {C_BORDER_SOFT};
     border-radius: 0px;
 }}
 
@@ -69,14 +68,14 @@ QTabBar::tab {{
 
 QTabBar::tab:selected {{
     color: {C_ACCENT};
-    border: 1px solid #2A4D5B;
+    border: 1px solid #356277;
     background: {C_ACCENT_SOFT};
 }}
 
 QTabBar::tab:hover:!selected {{
     color: {C_TEXT};
-    background: #1D2E4B;
-    border-color: #355077;
+    background: #273B5A;
+    border-color: #4A6B93;
 }}
 
 
@@ -183,7 +182,7 @@ QLineEdit, QTextEdit, QDoubleSpinBox {{
 
 QLineEdit:focus, QTextEdit:focus, QDoubleSpinBox:focus {{
     border: 1.5px solid {C_ACCENT};
-    background-color: #152238;
+    background-color: #1C2B44;
 }}
 
 QLineEdit::placeholder {{

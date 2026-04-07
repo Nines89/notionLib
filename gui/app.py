@@ -37,6 +37,17 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
+        # ── Sidebar (di nuovo a sinistra) ─────────────────────────
+        self._sidebar = SidebarWidget()
+        self._sidebar.connect_requested.connect(self._on_connect)
+        self._sidebar.disconnect_requested.connect(self._on_disconnect)
+        root.addWidget(self._sidebar)
+
+        sep = QFrame()
+        sep.setFrameShape(QFrame.Shape.VLine)
+        sep.setStyleSheet("color: #26334E;")
+        root.addWidget(sep)
+
         # ── Area contenuto principale ─────────────────────────────
         content = QWidget()
         content.setObjectName("ContentArea")
@@ -67,17 +78,6 @@ class MainWindow(QMainWindow):
 
         content_lay.addWidget(self._tabs)
         root.addWidget(content, stretch=1)
-
-        # ── Sidebar a destra (layout rinnovato) ───────────────────
-        sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.VLine)
-        sep.setStyleSheet("color: #1F2A40;")
-        root.addWidget(sep)
-
-        self._sidebar = SidebarWidget()
-        self._sidebar.connect_requested.connect(self._on_connect)
-        self._sidebar.disconnect_requested.connect(self._on_disconnect)
-        root.addWidget(self._sidebar)
 
         # ── Connessioni segnali ───────────────────────────────────
         self._copy_tool.schema_needed.connect(self._on_schema_needed)

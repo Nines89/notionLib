@@ -91,12 +91,13 @@ class WorkspaceTab(QWidget):
         lay.addWidget(tree_lbl)
 
         self._tree = QTreeWidget()
-        self._tree.setHeaderLabels(["Nome", "Tipo", "ID"])
-        self._tree.setColumnWidth(0, 340)
-        self._tree.setColumnWidth(1, 100)
+        self._tree.setHeaderLabels(["Nome", "Tipo"])
+        self._tree.setColumnWidth(0, 420)
+        self._tree.setColumnWidth(1, 120)
         self._tree.setAlternatingRowColors(True)
         self._tree.setAnimated(True)
         self._tree.setIndentation(22)
+        self._tree.setUniformRowHeights(True)
 
         # Abilita menu contestuale custom
         self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -119,8 +120,8 @@ class WorkspaceTab(QWidget):
         if not item:
             return
 
-        obj_type = item.text(1)   # "pagina" | "database" | "datasource"
-        obj_id   = item.text(2)
+        obj_type = item.data(0, Qt.ItemDataRole.UserRole)            # pagina|database|datasource
+        obj_id   = item.data(0, Qt.ItemDataRole.UserRole + 1)        # id reale
 
         if not obj_type or not obj_id:
             return   # nodi di raggruppamento (es. "Senza pagina parent")
@@ -218,52 +219,66 @@ class WorkspaceTab(QWidget):
 
         placed_db = set()
 
-        for page_id, page_info in pages.items():
+        top_pages = QTreeWidgetItem(self._tree, ["📚  Pagine con database", "gruppo"])
+        top_pages.setFont(0, bf)
+        top_pages.setExpanded(True)
+
+        for page_id, page_info in sorted(pages.items(), key=lambda x: x[1].get("title", "").lower()):
             child_db_ids = db_by_page.get(page_id, [])
             if not child_db_ids:
                 continue
 
             pg_item = QTreeWidgetItem(
-                self._tree,
-                [f"🗒  {page_info['title']}", "pagina", page_id]
+                top_pages,
+                [f"🗒  {page_info['title']}", "pagina"]
             )
+            pg_item.setData(0, Qt.ItemDataRole.UserRole, "pagina")
+            pg_item.setData(0, Qt.ItemDataRole.UserRole + 1, page_id)
             pg_item.setFont(0, bf)
             pg_item.setExpanded(True)
 
-            for db_id in child_db_ids:
+            for db_id in sorted(child_db_ids, key=lambda i: databases[i].get("title", "").lower()):
                 db_info = databases[db_id]
                 db_item = QTreeWidgetItem(
                     pg_item,
-                    [f"📦  {db_info['title']}", "database", db_id]
+                    [f"📦  {db_info['title']}", "database"]
                 )
+                db_item.setData(0, Qt.ItemDataRole.UserRole, "database")
+                db_item.setData(0, Qt.ItemDataRole.UserRole + 1, db_id)
                 db_item.setExpanded(True)
                 placed_db.add(db_id)
 
-                for ds in ds_by_db.get(db_id, []):
-                    QTreeWidgetItem(
+                for ds in sorted(ds_by_db.get(db_id, []), key=lambda d: d.get("name", "").lower()):
+                    ds_item = QTreeWidgetItem(
                         db_item,
-                        [f"🗂  {ds['name']}", "datasource", ds["id"]]
+                        [f"🗂  {ds['name']}", "datasource"]
                     )
+                    ds_item.setData(0, Qt.ItemDataRole.UserRole, "datasource")
+                    ds_item.setData(0, Qt.ItemDataRole.UserRole + 1, ds["id"])
 
         orphan_dbs = [
             (db_id, db_info) for db_id, db_info in databases.items()
             if db_id not in placed_db
         ]
         if orphan_dbs:
-            other = QTreeWidgetItem(self._tree, ["📂  Senza pagina parent", "", ""])
+            other = QTreeWidgetItem(self._tree, ["🧱  Database senza pagina parent", "gruppo"])
             other.setFont(0, bf)
             other.setExpanded(True)
-            for db_id, db_info in orphan_dbs:
+            for db_id, db_info in sorted(orphan_dbs, key=lambda x: x[1].get("title", "").lower()):
                 db_item = QTreeWidgetItem(
                     other,
-                    [f"📦  {db_info['title']}", "database", db_id]
+                    [f"📦  {db_info['title']}", "database"]
                 )
+                db_item.setData(0, Qt.ItemDataRole.UserRole, "database")
+                db_item.setData(0, Qt.ItemDataRole.UserRole + 1, db_id)
                 db_item.setExpanded(True)
-                for ds in ds_by_db.get(db_id, []):
-                    QTreeWidgetItem(
+                for ds in sorted(ds_by_db.get(db_id, []), key=lambda d: d.get("name", "").lower()):
+                    ds_item = QTreeWidgetItem(
                         db_item,
-                        [f"🗂  {ds['name']}", "datasource", ds["id"]]
+                        [f"🗂  {ds['name']}", "datasource"]
                     )
+                    ds_item.setData(0, Qt.ItemDataRole.UserRole, "datasource")
+                    ds_item.setData(0, Qt.ItemDataRole.UserRole + 1, ds["id"])
 
     # ── Font helpers ──────────────────────────────────────────────
 
