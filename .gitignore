@@ -8,3 +8,7 @@ nModels/blocks_v1/__pycache__
 tests/__pycache__
 nModels/blocks/__pycache__
 OLDSTYLE
+gui/__pycache__
+gui/logic/__pycache__
+gui/widgets/__pycache__
+gui/widgets/automation_tools/__pycache__

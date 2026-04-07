@@ -4,7 +4,7 @@ BASE = "https://api.notion.com/v1/search"
 
 
 def search_by_title(headers,
-                    query: str,
+                    query: str = '',
                     filters: str = None,
                     sorts: str = None):
     payload: dict[str, str] | dict[str, dict] = {
