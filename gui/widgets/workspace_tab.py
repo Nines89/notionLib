@@ -219,7 +219,7 @@ class WorkspaceTab(QWidget):
 
         placed_db = set()
 
-        top_pages = QTreeWidgetItem(self._tree, ["📚  Pagine con database", "gruppo"])
+        top_pages = QTreeWidgetItem(self._tree, ["📚  Starting Page", "First Parent"])
         top_pages.setFont(0, bf)
         top_pages.setExpanded(True)
 
