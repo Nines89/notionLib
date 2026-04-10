@@ -72,3 +72,83 @@ class RunWorker(QThread):
             self.success.emit(log)
         except Exception as e:
             self.failure.emit(str(e))
+
+
+class InsertBlockWorker(QThread):
+    """Inserisce un blocco in una pagina."""
+    success = pyqtSignal(str)   # messaggio successo
+    failure = pyqtSignal(str)   # errore
+
+    def __init__(self, api, page_id: str, block):
+        super().__init__()
+        self._api     = api
+        self._page_id = page_id
+        self._block   = block
+
+    def run(self):
+        try:
+            from nModels.pages import PageFactory
+            page = PageFactory.find(self._api.headers, self._page_id)
+            page.append_children([self._block])
+            self.success.emit(f"Blocco '{self._block.type}' inserito con successo!")
+        except Exception as e:
+            self.failure.emit(str(e))
+
+
+class CreateDataSourceWorker(QThread):
+    """Crea un nuovo datasource con schema."""
+    success = pyqtSignal(str, str)   # ds_id, messaggio
+    failure = pyqtSignal(str)        # errore
+
+    def __init__(self, api, db_id: str, name: str, prop_schema: dict):
+        super().__init__()
+        self._api = api
+        self._db_id = db_id
+        self._name = name
+        self._prop_schema = prop_schema
+
+    def run(self):
+        try:
+            from nModels.datasources import NDataSource
+            ds = NDataSource.create(
+                headers=self._api.headers,
+                title=self._name,
+                parent_db_id=self._db_id,
+                prop_schema=self._prop_schema
+            )
+            self.success.emit(
+                ds.obj_id,
+                f"DataSource '{self._name}' creato con {len(self._prop_schema)} proprietà!"
+            )
+        except Exception as e:
+            self.failure.emit(str(e))
+
+
+class CreateDSEntryWorker(QThread):
+    """Crea una nuova entry o template in un datasource."""
+    success = pyqtSignal(str)  # messaggio
+    failure = pyqtSignal(str)  # errore
+
+    def __init__(self, api, ds_id: str, properties: dict, is_template: bool = False):
+        super().__init__()
+        self._api = api
+        self._ds_id = ds_id
+        self._properties = properties
+        self._is_template = is_template
+
+    def run(self):
+        try:
+            from nModels.datasources import DataSourceFactory
+            ds = DataSourceFactory.find(self._api.headers, self._ds_id)
+
+            # Crea entry o template
+            if self._is_template:
+                ds.create_entry(properties=self._properties, is_template=True)
+                msg = "Template creato con successo!"
+            else:
+                ds.create_entry(properties=self._properties)
+                msg = "Entry creata con successo!"
+
+            self.success.emit(msg)
+        except Exception as e:
+            self.failure.emit(str(e))

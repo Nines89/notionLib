@@ -183,10 +183,6 @@ class WorkspaceTab(QWidget):
         act1.triggered.connect(lambda: self.action_add_ds.emit(db_id))
         menu.addAction(act1)
 
-        act2 = QAction("📄  Crea pagina con proprietà", menu)
-        act2.triggered.connect(lambda: self.action_create_db_page.emit(db_id))
-        menu.addAction(act2)
-
     def _menu_datasource(self, menu: QMenu, ds_id: str, name: str):
         header = QAction(f"🗂  {name}", menu)
         header.setEnabled(False)
@@ -194,9 +190,10 @@ class WorkspaceTab(QWidget):
         menu.addAction(header)
         menu.addSeparator()
 
-        act = QAction("➕  Aggiungi pagina", menu)
-        act.triggered.connect(lambda: self.action_add_ds_page.emit(ds_id))
-        menu.addAction(act)
+        # Aggiungi pagina normale
+        act1 = QAction("➕  Aggiungi pagina", menu)
+        act1.triggered.connect(lambda: self.action_add_ds_page.emit(ds_id))
+        menu.addAction(act1)
 
     # ── Albero ────────────────────────────────────────────────────
 

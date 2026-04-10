@@ -7,7 +7,7 @@ NON contiene logica di business.
 
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QTabWidget,
-    QStatusBar, QMessageBox, QFrame,
+    QStatusBar, QMessageBox, QFrame, QDialog
 )
 
 from gui.state import get_state, reset_state
@@ -61,6 +61,9 @@ class MainWindow(QMainWindow):
 
         # Tab 1: Workspace
         self._ws_tab = WorkspaceTab()
+        self._ws_tab.action_insert_block.connect(self._on_insert_block_requested)
+        self._ws_tab.action_add_ds.connect(self._on_create_datasource_requested)
+        self._ws_tab.action_add_ds_page.connect(self._on_create_ds_entry_requested)
         self._tabs.addTab(self._ws_tab, "  🪐 Panorama  ")
 
         # Tab 2: Automazioni (con tile + stack interno)
@@ -241,3 +244,155 @@ class MainWindow(QMainWindow):
     def _cleanup_worker(self, worker):
         if worker in self._workers:
             self._workers.remove(worker)
+
+    # ══════════════════════════════════════════════════════════════
+    # Create Block
+    # ══════════════════════════════════════════════════════════════
+
+    def _on_insert_block_requested(self, page_id: str):
+        """Mostra dialog per inserire un blocco nella pagina."""
+        state = get_state()
+        page_info = state.pages.get(page_id.replace("-", ""))
+        page_title = page_info.get("title", "Pagina") if page_info else "Pagina"
+
+        from gui.widgets.block_insert_dialog import InsertBlockDialog
+        dialog = InsertBlockDialog(page_title, parent=self)
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            block = dialog.get_block()
+            if not block:
+                return
+
+            self._status.showMessage("Inserimento blocco in corso...")
+
+            from gui.workers import InsertBlockWorker
+            w = InsertBlockWorker(state.api, page_id, block)
+            w.success.connect(self._on_insert_block_ok)
+            w.failure.connect(self._on_insert_block_fail)
+            w.finished.connect(lambda worker=w: self._cleanup_worker(worker))
+            self._workers.append(w)
+            w.start()
+
+    def _on_insert_block_ok(self, msg: str):
+        self._status.showMessage(msg)
+        QMessageBox.information(self, "Successo", msg)
+
+    def _on_insert_block_fail(self, error: str):
+        self._status.showMessage("Inserimento fallito.")
+        QMessageBox.critical(self, "Errore", f"Impossibile inserire il blocco:\n{error}")
+
+    # ══════════════════════════════════════════════════════════════
+    # Create DataSource
+    # ══════════════════════════════════════════════════════════════
+
+    def _on_create_datasource_requested(self, db_id: str):
+        """Mostra dialog per creare un datasource."""
+        state = get_state()
+        db_info = state.databases.get(db_id.replace("-", ""))
+        db_title = db_info.get("title", "Database") if db_info else "Database"
+
+        from gui.widgets.datasource_create_dialog import DataSourceCreateDialog
+        from PyQt6.QtWidgets import QDialog
+
+        dialog = DataSourceCreateDialog(db_id, db_title, parent=self)
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            cfg = dialog.get_config()
+
+            self._status.showMessage("Creazione datasource in corso...")
+
+            from gui.workers import CreateDataSourceWorker
+            w = CreateDataSourceWorker(
+                state.api,
+                cfg["db_id"],
+                cfg["name"],
+                cfg["prop_schema"]
+            )
+            w.success.connect(self._on_create_datasource_ok)
+            w.failure.connect(self._on_create_datasource_fail)
+            w.finished.connect(lambda worker=w: self._cleanup_worker(worker))
+            self._workers.append(w)
+            w.start()
+
+    def _on_create_datasource_ok(self, ds_id: str, msg: str):
+        self._status.showMessage(msg)
+        QMessageBox.information(self, "Successo", msg)
+
+        # Ricarica workspace per mostrare il nuovo datasource
+        self._refresh_workspace()
+
+    def _on_create_datasource_fail(self, error: str):
+        self._status.showMessage("Creazione fallita.")
+        QMessageBox.critical(self, "Errore", f"Impossibile creare il datasource:\n{error}")
+
+    def _refresh_workspace(self):
+        """Ricarica i dati del workspace."""
+        state = get_state()
+        if not state.api:
+            return
+
+        self._status.showMessage("Aggiornamento workspace...")
+        w = ConnectWorker(state.api.headers["Authorization"].replace("Bearer ", ""))
+        w.success.connect(self._on_connect_ok)
+        w.failure.connect(lambda e: self._status.showMessage("Aggiornamento fallito"))
+        w.finished.connect(lambda worker=w: self._cleanup_worker(worker))
+        self._workers.append(w)
+        w.start()
+
+    # ══════════════════════════════════════════════════════════════
+    # Create DataSource Page
+    # ══════════════════════════════════════════════════════════════
+
+    def _on_create_ds_entry_requested(self, ds_id: str):
+        """Mostra dialog per creare una entry nel datasource."""
+        state = get_state()
+
+        # Cerca info datasource
+        ds_info = None
+        for ds in state.datasources:
+            if ds["id"] == ds_id.replace("-", ""):
+                ds_info = ds
+                break
+
+        if not ds_info:
+            QMessageBox.warning(self, "Errore", "DataSource non trovato.")
+            return
+
+        ds_name = ds_info["name"]
+
+        # Verifica se schema è in cache
+        if ds_id not in state.ds_schemas:
+            self._on_schema_needed(ds_id)
+            QMessageBox.information(
+                self, "Caricamento schema",
+                "Lo schema del datasource è in caricamento. Riprova tra qualche secondo."
+            )
+            return
+
+        schema = state.ds_schemas[ds_id]
+
+        from gui.widgets.datasource_entry_dialog import DataSourceEntryDialog
+        from PyQt6.QtWidgets import QDialog
+
+        dialog = DataSourceEntryDialog(ds_id, ds_name, schema, parent=self)
+
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            props = dialog.get_properties()
+
+            self._status.showMessage("Creazione entry in corso...")
+
+            from gui.workers import CreateDSEntryWorker
+            w = CreateDSEntryWorker(state.api, ds_id, props)
+            w.success.connect(self._on_create_ds_entry_ok)
+            w.failure.connect(self._on_create_ds_entry_fail)
+            w.finished.connect(lambda worker=w: self._cleanup_worker(worker))
+            self._workers.append(w)
+            w.start()
+
+    def _on_create_ds_entry_ok(self, msg: str):
+        self._status.showMessage(msg)
+        QMessageBox.information(self, "Successo", msg)
+
+    def _on_create_ds_entry_fail(self, error: str):
+        self._status.showMessage("Creazione fallita.")
+        QMessageBox.critical(self, "Errore", f"Impossibile creare l'entry:\n{error}")
