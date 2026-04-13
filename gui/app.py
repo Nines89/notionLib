@@ -13,6 +13,8 @@ from PyQt6.QtWidgets import (
 from gui.state import get_state, reset_state
 from gui.workers import ConnectWorker, LoadSchemaWorker, RunWorker
 from gui.logic.codegen import generate
+from gui.logic.block_inserter import insert_block
+from gui.dialogs.insert_block_dialog import InsertBlockDialog
 
 from gui.widgets.sidebar       import SidebarWidget
 from gui.widgets.workspace_tab import WorkspaceTab
@@ -88,6 +90,7 @@ class MainWindow(QMainWindow):
         self._copy_tool.schema_needed.connect(self._on_schema_needed)
         self._copy_tool.generate_requested.connect(self._on_copy_generate)
         self._copy_tool.run_requested.connect(self._on_copy_run)
+        self._ws_tab.action_insert_block.connect(self._on_insert_block)
 
         # ── Status bar ────────────────────────────────────────────
         self._status = QStatusBar()
@@ -238,6 +241,32 @@ class MainWindow(QMainWindow):
         self._copy_tool.set_running(False)
         self._copy_tool.show_log([f"✗ Errore fatale: {error}"])
         self._status.showMessage("Esecuzione fallita.")
+
+    # ══════════════════════════════════════════════════════════════
+    # Workspace actions
+    # ══════════════════════════════════════════════════════════════
+
+    def _on_insert_block(self, page_id: str):
+        state = get_state()
+        if not state.api:
+            QMessageBox.warning(self, "Non connesso", "Connettiti prima a Notion.")
+            return
+
+        dlg = InsertBlockDialog(page_id=page_id, parent=self)
+        if dlg.exec() != dlg.DialogCode.Accepted:
+            return
+
+        try:
+            insert_block(
+                headers=state.api.headers,
+                page_id=page_id,
+                block_key=dlg.selected_block_key,
+                values=dlg.selected_values(),
+            )
+            self._status.showMessage("Blocco inserito con successo.")
+        except Exception as e:
+            QMessageBox.critical(self, "Errore inserimento blocco", str(e))
+            self._status.showMessage("Inserimento blocco fallito.")
 
     # ══════════════════════════════════════════════════════════════
     # Utility
