@@ -152,3 +152,58 @@ class CreateDSEntryWorker(QThread):
             self.success.emit(msg)
         except Exception as e:
             self.failure.emit(str(e))
+
+class CreateRepeatedBlocksWorker(QThread):
+    """Crea pagine ripetute e aggiunge blocchi tabella giorni."""
+    success = pyqtSignal(list)
+    failure = pyqtSignal(str)
+
+    def __init__(self, api, cfg: dict):
+        super().__init__()
+        self._api = api
+        self._cfg = cfg
+
+    def run(self):
+        log = []
+        try:
+            from nModels.datasources import DataSourceFactory
+            from nModels.blocks.table import TableBlock, TableRowBlock
+            from nTypes.rich_text import simple_rich_text_list
+
+            ds = DataSourceFactory.find(self._api.headers, self._cfg["target_id"])
+            days = self._cfg.get("days") or [
+                "Lunedì", "Martedì", "Mercoledì", "Giovedì",
+                "Venerdì", "Sabato", "Domenica"
+            ]
+
+            def build_table():
+                header = TableRowBlock.create(cells=[simple_rich_text_list(d) for d in days])
+                blank = TableRowBlock.create(cells=[simple_rich_text_list("") for _ in days])
+                return TableBlock.create(
+                    table_width=len(days),
+                    has_column_header=True,
+                    has_row_header=False,
+                    cells=[header, blank],
+                )
+
+            start = self._cfg["start_week"]
+            total = self._cfg["weeks_count"]
+            title_prop = self._cfg["title_prop"]
+            prefix = self._cfg["title_prefix"]
+            with_table = self._cfg["with_table"]
+
+            for week_no in range(start, start + total):
+                props = {
+                    title_prop: {
+                        "title": [{"text": {"content": f"{prefix} {week_no:02d}"}}]
+                    }
+                }
+                page = ds.create_entry(properties=props)
+                if with_table:
+                    page.append_children([build_table()])
+                log.append(f"✓ Creata pagina {prefix} {week_no:02d}")
+
+            log.append(f"✓ Completato: create {total} pagine.")
+            self.success.emit(log)
+        except Exception as e:
+            self.failure.emit(str(e))
