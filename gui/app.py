@@ -73,10 +73,12 @@ class MainWindow(QMainWindow):
         # Registra i tool nell'AutomationsTab
         self._copy_tool = CopyDatasourceTool()
         self._auto_tab.register_tool(
-            icon        = "🧠",
-            title       = "Sync DataSource",
-            description = "Trasforma e sincronizza record tra due datasource con filtri avanzati.",
-            tool_widget = self._copy_tool,
+            icon="🧠",
+            title="Sync DataSource",
+            description="Trasforma e sincronizza record tra due datasource con filtri avanzati e mapping intelligente.",
+            gradient_start="#6366F1",  # ← NUOVO: indigo
+            gradient_end="#8B5CF6",  # ← NUOVO: purple
+            tool_widget=self._copy_tool,
         )
 
         content_lay.addWidget(self._tabs)
