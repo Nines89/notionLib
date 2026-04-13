@@ -1,0 +1,261 @@
+"""Tool automazione per creare pagine ripetute con contenuto altamente personalizzabile."""
+
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QLabel, QLineEdit, QComboBox, QGroupBox,
+    QScrollArea, QPushButton, QTextEdit, QHBoxLayout, QSpinBox,
+    QCheckBox, QFileDialog
+)
+
+# --- STILE QSS ---
+from .styles import STYLESHEET, _SectionCard, cp_ds_sections
+
+
+
+class RepeatedBlocksTool(QWidget):
+    schema_needed = pyqtSignal(str)
+    run_requested = pyqtSignal(dict)
+    generate_requested = pyqtSignal(dict)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._schemas = {}
+        self._build_ui()
+
+    def _build_ui(self):
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll.setStyleSheet(STYLESHEET)
+
+        content = QWidget()
+        lay = QVBoxLayout(content)
+        lay.setContentsMargins(28, 24, 28, 28)
+        lay.setSpacing(20)
+
+        name_card = _SectionCard("🔁", "Template ripetitivo")
+        self._name_input = QLineEdit("Settimane Annuali")
+        self._name_input.setFixedHeight(40)
+        self._name_input.setStyleSheet(STYLESHEET)
+        name_card.add_content(self._name_input)
+        lay.addWidget(name_card)
+
+        target_card = _SectionCard("🎯", "Destinazione")
+        target_inner = QWidget()
+        ti_lay = QVBoxLayout(target_inner)
+        ti_lay.setSpacing(10)
+
+        self._target_combo = QComboBox()
+        self._target_combo.setFixedHeight(40)
+        self._target_combo.setStyleSheet(STYLESHEET)
+        self._target_combo.currentIndexChanged.connect(self._on_target_changed)
+
+        self._title_prop_combo = QComboBox()
+        self._title_prop_combo.setFixedHeight(38)
+        self._title_prop_combo.setStyleSheet(STYLESHEET)
+
+        self._schema_lbl = QLabel("Schema: —")
+        self._schema_lbl.setStyleSheet("color: #94A3B8; font-size: 12px;")
+
+        target_card.add_content(QLabel("DataSource di destinazione:"))
+        target_card.add_content(self._target_combo)
+        target_card.add_content(QLabel("Proprietà titolo da valorizzare:"))
+        target_card.add_content(self._title_prop_combo)
+        target_card.add_content(self._schema_lbl)
+        lay.addWidget(target_card)
+
+        pages_card = _SectionCard("🧩", "Tipo di pagine da creare")
+        self._mode_combo = QComboBox()
+        self._mode_combo.setStyleSheet(STYLESHEET)
+        self._mode_combo.addItem("Intervallo dinamico", "range")
+        self._mode_combo.addItem("Lista titoli personalizzata", "custom")
+        self._mode_combo.currentIndexChanged.connect(self._refresh_mode_ui)
+
+        self._title_template = QLineEdit("Settimana {index:02d}")
+        self._title_template.setStyleSheet(STYLESHEET)
+
+        row = QWidget()
+        row_l = QHBoxLayout(row)
+        row_l.setContentsMargins(0, 0, 0, 0)
+        self._start_index = QSpinBox()
+        self._start_index.setRange(1, 5000)
+        self._start_index.setValue(1)
+        self._count = QSpinBox()
+        self._count.setRange(1, 5000)
+        self._count.setValue(52)
+        row_l.addWidget(QLabel("Indice iniziale"))
+        row_l.addWidget(self._start_index)
+        row_l.addSpacing(12)
+        row_l.addWidget(QLabel("Numero pagine"))
+        row_l.addWidget(self._count)
+        row_l.addStretch()
+
+        self._custom_titles = QTextEdit()
+        self._custom_titles.setPlaceholderText("Un titolo per riga (es. Sprint 1, Sprint 2, ...)")
+        self._custom_titles.setMinimumHeight(110)
+
+        hint = QLabel("Placeholder disponibili nel titolo template: {index}, {title}")
+        hint.setStyleSheet("color: #64748B; font-size: 12px;")
+
+        pages_card.add_content(QLabel("Modalità generazione pagine:"))
+        pages_card.add_content(self._mode_combo)
+        pages_card.add_content(QLabel("Titolo template (modalità intervallo):"))
+        pages_card.add_content(self._title_template)
+        pages_card.add_content(row)
+        pages_card.add_content(QLabel("Titoli custom (modalità lista):"))
+        pages_card.add_content(self._custom_titles)
+        pages_card.add_content(hint)
+        lay.addWidget(pages_card)
+
+        blocks_card = _SectionCard("🧱", "Contenuto pagina (massima personalizzazione)")
+        info = QLabel(
+            "Definisci i blocchi in JSON. Tipi supportati: heading_1, heading_2, heading_3, "
+            "paragraph, table. Nei testi puoi usare {index} e {title}."
+        )
+        info.setWordWrap(True)
+        info.setStyleSheet("color: #64748B; font-size: 12px;")
+
+        self._blueprint_edit = QTextEdit()
+        self._blueprint_edit.setFont(QFont("Consolas", 10))
+        self._blueprint_edit.setMinimumHeight(180)
+        self._blueprint_edit.setPlainText(STYLESHEET)
+
+        blocks_card.add_content(info)
+        blocks_card.add_content(self._blueprint_edit)
+        lay.addWidget(blocks_card)
+
+        action_card = _SectionCard("⚡", "Esecuzione")
+        btn_row = QWidget()
+        br = QHBoxLayout(btn_row)
+        br.setContentsMargins(0, 0, 0, 0)
+        br.setSpacing(12)
+
+        self._gen_btn = QPushButton("💾  Genera codice")
+        self._gen_btn.setEnabled(False)
+        self._gen_btn.setFixedHeight(44)
+        self._gen_btn.setStyleSheet(STYLESHEET)
+        self._gen_btn.clicked.connect(lambda: self.generate_requested.emit(self.get_config()))
+
+        self._run_btn = QPushButton("▶  Crea pagine")
+        self._run_btn.setEnabled(False)
+        self._run_btn.setFixedHeight(44)
+        self._run_btn.setStyleSheet(STYLESHEET)
+        self._run_btn.clicked.connect(lambda: self.run_requested.emit(self.get_config()))
+
+        br.addWidget(self._gen_btn)
+        br.addWidget(self._run_btn)
+        action_card.add_content(btn_row)
+        lay.addWidget(action_card)
+
+        code_card = _SectionCard("</>", "Codice generato")
+        self._code_edit = QTextEdit()
+        self._code_edit.setFont(QFont("Consolas", 10))
+        self._code_edit.setMinimumHeight(200)
+        self._code_edit.setStyleSheet(STYLESHEET)
+        self._save_btn = QPushButton("⬇️  Salva come .py")
+        self._save_btn.setEnabled(False)
+        self._save_btn.clicked.connect(self._on_save)
+        code_card.add_content(self._code_edit)
+        code_card.add_content(self._save_btn)
+        lay.addWidget(code_card)
+
+        log_card = _SectionCard("📋", "Log esecuzione")
+        self._log_edit = QTextEdit()
+        self._log_edit.setReadOnly(True)
+        self._log_edit.setMaximumHeight(120)
+        self._log_edit.setStyleSheet(STYLESHEET)
+        log_card.add_content(self._log_edit)
+        lay.addWidget(log_card)
+
+        lay.addStretch()
+        scroll.setWidget(content)
+        outer.addWidget(scroll)
+        self._refresh_mode_ui()
+
+    def populate_datasources(self, datasources: list):
+        self._target_combo.blockSignals(True)
+        self._target_combo.clear()
+        for ds in datasources:
+            self._target_combo.addItem(f"{ds['name']}  [{ds['db_title']}]", ds["id"])
+        self._target_combo.blockSignals(False)
+        self._on_target_changed()
+
+    def update_schema(self, ds_id: str, schema: dict):
+        self._schemas[ds_id] = schema
+        self._refresh_schema_ui()
+        self._refresh_action_btns()
+
+    def set_code(self, code: str):
+        self._code_edit.setPlainText(code)
+        self._save_btn.setEnabled(bool(code))
+
+    def show_log(self, lines: list):
+        self._log_edit.setPlainText("\n".join(lines))
+
+    def set_running(self, running: bool):
+        self._run_btn.setEnabled(not running)
+        self._run_btn.setText("⏳ Creazione in corso…" if running else "▶  Crea pagine")
+
+    def get_config(self) -> dict:
+        custom_titles = [r.strip() for r in self._custom_titles.toPlainText().splitlines() if r.strip()]
+        return {
+            "name": self._name_input.text().strip() or "Automazione ripetitiva",
+            "target_id": self._target_combo.currentData(),
+            "title_prop": self._title_prop_combo.currentData() or "Name",
+            "mode": self._mode_combo.currentData(),
+            "title_template": self._title_template.text().strip() or "Pagina {index}",
+            "start_index": self._start_index.value(),
+            "count": self._count.value(),
+            "custom_titles": custom_titles,
+            "blocks_blueprint": self._blueprint_edit.toPlainText().strip() or "[]",
+        }
+
+    def _refresh_mode_ui(self):
+        custom_mode = self._mode_combo.currentData() == "custom"
+        self._title_template.setEnabled(not custom_mode)
+        self._start_index.setEnabled(not custom_mode)
+        self._count.setEnabled(not custom_mode)
+        self._custom_titles.setEnabled(custom_mode)
+
+    def _on_target_changed(self, _=None):
+        ds_id = self._target_combo.currentData()
+        if ds_id and ds_id not in self._schemas:
+            self.schema_needed.emit(ds_id)
+        self._refresh_schema_ui()
+        self._refresh_action_btns()
+
+    def _refresh_schema_ui(self):
+        ds_id = self._target_combo.currentData()
+        schema = self._schemas.get(ds_id, {})
+        self._title_prop_combo.clear()
+        if schema:
+            preview = ", ".join(f"{k} ({v.get('type', '?')})" for k, v in list(schema.items())[:3])
+            self._schema_lbl.setText(f"Schema: {preview}{'…' if len(schema) > 3 else ''}")
+            title_props = [k for k, v in schema.items() if v.get("type") == "title"]
+            if not title_props:
+                title_props = list(schema.keys())[:1]
+            for prop in title_props:
+                self._title_prop_combo.addItem(prop, prop)
+        else:
+            self._schema_lbl.setText("Schema: caricamento…")
+
+    def _refresh_action_btns(self):
+        ds_id = self._target_combo.currentData()
+        enabled = bool(ds_id and self._schemas.get(ds_id))
+        self._gen_btn.setEnabled(enabled)
+        self._run_btn.setEnabled(enabled)
+
+    def _on_save(self):
+        code = self._code_edit.toPlainText()
+        if not code:
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Salva automazione", "automazione_ripetitiva.py", "Python files (*.py)"
+        )
+        if path:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(code)

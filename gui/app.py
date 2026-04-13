@@ -11,13 +11,14 @@ from PyQt6.QtWidgets import (
 )
 
 from gui.state import get_state, reset_state
-from gui.workers import ConnectWorker, LoadSchemaWorker, RunWorker
+from gui.workers import ConnectWorker, LoadSchemaWorker, RunWorker, CreateRepeatedBlocksWorker
 from gui.logic.codegen import generate
 
 from gui.widgets.sidebar       import SidebarWidget
 from gui.widgets.workspace_tab import WorkspaceTab
 from gui.widgets.automations_tab import AutomationsTab
 from gui.widgets.automation_tools.copy_datasource import CopyDatasourceTool
+from gui.widgets.automation_tools.repeated_blocks import RepeatedBlocksTool
 
 
 class MainWindow(QMainWindow):
@@ -81,6 +82,16 @@ class MainWindow(QMainWindow):
             tool_widget=self._copy_tool,
         )
 
+        self._repeat_tool = RepeatedBlocksTool()
+        self._auto_tab.register_tool(
+            icon="🗓️",
+            title="Blocchi ripetuti",
+            description="Crea serie di pagine con la stessa struttura, ideale per settimane, sprint o checklist periodiche.",
+            gradient_start="#0EA5E9",
+            gradient_end="#22D3EE",
+            tool_widget=self._repeat_tool,
+        )
+
         content_lay.addWidget(self._tabs)
         root.addWidget(content, stretch=1)
 
@@ -88,6 +99,9 @@ class MainWindow(QMainWindow):
         self._copy_tool.schema_needed.connect(self._on_schema_needed)
         self._copy_tool.generate_requested.connect(self._on_copy_generate)
         self._copy_tool.run_requested.connect(self._on_copy_run)
+        self._repeat_tool.schema_needed.connect(self._on_schema_needed)
+        self._repeat_tool.generate_requested.connect(self._on_repeat_generate)
+        self._repeat_tool.run_requested.connect(self._on_repeat_run)
 
         # ── Status bar ────────────────────────────────────────────
         self._status = QStatusBar()
@@ -119,6 +133,7 @@ class MainWindow(QMainWindow):
         self._sidebar.show_connected(bot_name, len(databases), len(datasources))
         self._ws_tab.refresh(databases, datasources, pages)
         self._copy_tool.populate_datasources(datasources)
+        self._repeat_tool.populate_datasources(datasources)
         self._tabs.setEnabled(True)
         self._status.showMessage(
             f"Connesso come {bot_name}  ·  "
@@ -153,6 +168,7 @@ class MainWindow(QMainWindow):
         if ds_id in state.ds_schemas:
             # Schema già in cache: aggiorna subito i tool
             self._copy_tool.update_schema(ds_id, state.ds_schemas[ds_id])
+            self._repeat_tool.update_schema(ds_id, state.ds_schemas[ds_id])
             return
         w = LoadSchemaWorker(api, ds_id)
         w.success.connect(self._on_schema_ok)
@@ -165,6 +181,7 @@ class MainWindow(QMainWindow):
         state = get_state()
         state.ds_schemas[ds_id] = schema
         self._copy_tool.update_schema(ds_id, schema)
+        self._repeat_tool.update_schema(ds_id, schema)
         self._status.showMessage("Schema caricato.")
 
     def _on_schema_fail(self, ds_id: str, error: str):
@@ -398,3 +415,42 @@ class MainWindow(QMainWindow):
     def _on_create_ds_entry_fail(self, error: str):
         self._status.showMessage("Creazione fallita.")
         QMessageBox.critical(self, "Errore", f"Impossibile creare l'entry:\n{error}")
+
+    # ══════════════════════════════════════════════════════════════
+    # RepeatedBlocks tool — genera e esegui
+    # ══════════════════════════════════════════════════════════════
+
+    def _on_repeat_generate(self, cfg: dict):
+        from gui.logic.repeated_blocks_codegen import generate_repeated_blocks_code
+        state = get_state()
+
+        def ds_label(ds_id: str) -> str:
+            for d in state.datasources:
+                if d["id"] == ds_id:
+                    return f"{d['name']}  [{d['db_title']}]"
+            return ds_id or "—"
+
+        code = generate_repeated_blocks_code(cfg, ds_label(cfg["target_id"]))
+        self._repeat_tool.set_code(code)
+
+    def _on_repeat_run(self, cfg: dict):
+        state = get_state()
+        self._repeat_tool.set_running(True)
+        self._status.showMessage("Creazione pagine ripetute in corso…")
+
+        w = CreateRepeatedBlocksWorker(state.api, cfg)
+        w.success.connect(self._on_repeat_run_ok)
+        w.failure.connect(self._on_repeat_run_fail)
+        w.finished.connect(lambda worker=w: self._cleanup_worker(worker))
+        self._workers.append(w)
+        w.start()
+
+    def _on_repeat_run_ok(self, log: list):
+        self._repeat_tool.set_running(False)
+        self._repeat_tool.show_log(log)
+        self._status.showMessage("Creazione template completata.")
+
+    def _on_repeat_run_fail(self, error: str):
+        self._repeat_tool.set_running(False)
+        self._repeat_tool.show_log([f"✗ Errore fatale: {error}"])
+        self._status.showMessage("Creazione template fallita.")
