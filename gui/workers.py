@@ -154,7 +154,7 @@ class CreateDSEntryWorker(QThread):
             self.failure.emit(str(e))
 
 class CreateRepeatedBlocksWorker(QThread):
-    """Crea pagine ripetute e aggiunge blocchi tabella giorni."""
+    """Crea pagine ripetute usando titolo dinamico + blueprint blocchi JSON."""
     success = pyqtSignal(list)
     failure = pyqtSignal(str)
 
@@ -163,47 +163,87 @@ class CreateRepeatedBlocksWorker(QThread):
         self._api = api
         self._cfg = cfg
 
+    def _build_titles(self):
+        mode = self._cfg.get("mode", "range")
+        if mode == "custom":
+            titles = self._cfg.get("custom_titles") or []
+            if not titles:
+                raise ValueError("Nessun titolo inserito in modalità lista personalizzata.")
+            return titles
+
+        template = self._cfg.get("title_template") or "Pagina {index}"
+        start = int(self._cfg.get("start_index") or 1)
+        total = int(self._cfg.get("count") or 1)
+        out = []
+        for idx in range(start, start + total):
+            out.append(template.format(index=idx, title=""))
+        return out
+
+    @staticmethod
+    def _render_text(text: str, index: int, title: str):
+        return (text or "").format(index=index, title=title)
+
+    def _build_blocks(self, blueprint: list, index: int, title: str):
+        from nModels.blocks.heading import Heading1, Heading2, Heading3
+        from nModels.blocks.paragraph import ParagraphBlock
+        from nModels.blocks.table import TableBlock, TableRowBlock
+        from nTypes.rich_text import simple_rich_text_list
+
+        blocks = []
+        for item in blueprint:
+            btype = item.get("type", "paragraph")
+            text = self._render_text(item.get("text", ""), index, title)
+
+            if btype == "heading_1":
+                blocks.append(Heading1.create(text=text))
+            elif btype == "heading_2":
+                blocks.append(Heading2.create(text=text))
+            elif btype == "heading_3":
+                blocks.append(Heading3.create(text=text))
+            elif btype == "paragraph":
+                blocks.append(ParagraphBlock.create(text=text))
+            elif btype == "table":
+                columns = item.get("columns") or ["Col 1", "Col 2"]
+                rows = int(item.get("rows", 1))
+                header = TableRowBlock.create(cells=[simple_rich_text_list(str(c)) for c in columns])
+                body_rows = [
+                    TableRowBlock.create(cells=[simple_rich_text_list("") for _ in columns])
+                    for _ in range(max(1, rows))
+                ]
+                blocks.append(TableBlock.create(
+                    table_width=len(columns),
+                    has_column_header=True,
+                    has_row_header=False,
+                    cells=[header] + body_rows,
+                ))
+        return blocks
+
     def run(self):
         log = []
         try:
+            import json
             from nModels.datasources import DataSourceFactory
-            from nModels.blocks.table import TableBlock, TableRowBlock
-            from nTypes.rich_text import simple_rich_text_list
 
             ds = DataSourceFactory.find(self._api.headers, self._cfg["target_id"])
-            days = self._cfg.get("days") or [
-                "Lunedì", "Martedì", "Mercoledì", "Giovedì",
-                "Venerdì", "Sabato", "Domenica"
-            ]
-
-            def build_table():
-                header = TableRowBlock.create(cells=[simple_rich_text_list(d) for d in days])
-                blank = TableRowBlock.create(cells=[simple_rich_text_list("") for _ in days])
-                return TableBlock.create(
-                    table_width=len(days),
-                    has_column_header=True,
-                    has_row_header=False,
-                    cells=[header, blank],
-                )
-
-            start = self._cfg["start_week"]
-            total = self._cfg["weeks_count"]
             title_prop = self._cfg["title_prop"]
-            prefix = self._cfg["title_prefix"]
-            with_table = self._cfg["with_table"]
+            titles = self._build_titles()
 
-            for week_no in range(start, start + total):
+            raw_blueprint = self._cfg.get("blocks_blueprint") or "[]"
+            blueprint = json.loads(raw_blueprint)
+            if not isinstance(blueprint, list):
+                raise ValueError("Il blueprint JSON deve essere una lista di blocchi.")
+
+            for i, title in enumerate(titles, start=1):
                 props = {
-                    title_prop: {
-                        "title": [{"text": {"content": f"{prefix} {week_no:02d}"}}]
-                    }
+                    title_prop: {"title": [{"text": {"content": title}}]}
                 }
                 page = ds.create_entry(properties=props)
-                if with_table:
-                    page.append_children([build_table()])
-                log.append(f"✓ Creata pagina {prefix} {week_no:02d}")
+                blocks = self._build_blocks(blueprint, index=i, title=title)
+                if blocks:
+                    page.append_children(blocks)
+                log.append(f"✓ Creata pagina {title} ({len(blocks)} blocchi)")
 
-            log.append(f"✓ Completato: create {total} pagine.")
+            log.append(f"✓ Completato: create {len(titles)} pagine.")
             self.success.emit(log)
         except Exception as e:
             self.failure.emit(str(e))

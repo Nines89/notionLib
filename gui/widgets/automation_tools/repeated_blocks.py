@@ -1,4 +1,4 @@
-"""Tool automazione per creare pagine ripetute con blocchi omogenei."""
+"""Tool automazione per creare pagine ripetute con contenuto altamente personalizzabile."""
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QFont
@@ -61,57 +61,72 @@ class RepeatedBlocksTool(QWidget):
         self._schema_lbl = QLabel("Schema: —")
         self._schema_lbl.setStyleSheet("color: #94A3B8; font-size: 12px;")
 
-        ti_lay.addWidget(QLabel("DataSource di destinazione:"))
-        ti_lay.addWidget(self._target_combo)
-        ti_lay.addWidget(QLabel("Proprietà titolo da valorizzare:"))
-        ti_lay.addWidget(self._title_prop_combo)
-        ti_lay.addWidget(self._schema_lbl)
-        target_card.add_content(target_inner)
+        target_card.add_content(QLabel("DataSource di destinazione:"))
+        target_card.add_content(self._target_combo)
+        target_card.add_content(QLabel("Proprietà titolo da valorizzare:"))
+        target_card.add_content(self._title_prop_combo)
+        target_card.add_content(self._schema_lbl)
         lay.addWidget(target_card)
 
-        pattern_card = _SectionCard("📅", "Pattern pagine")
-        pattern_inner = QWidget()
-        pi_lay = QVBoxLayout(pattern_inner)
-        pi_lay.setSpacing(10)
+        pages_card = _SectionCard("🧩", "Tipo di pagine da creare")
+        self._mode_combo = QComboBox()
+        self._mode_combo.setStyleSheet(COMBO_STYLE)
+        self._mode_combo.addItem("Intervallo dinamico", "range")
+        self._mode_combo.addItem("Lista titoli personalizzata", "custom")
+        self._mode_combo.currentIndexChanged.connect(self._refresh_mode_ui)
 
-        self._prefix_input = QLineEdit("Settimana")
-        self._prefix_input.setFixedHeight(38)
-        self._prefix_input.setStyleSheet(STYLESHEET)
+        self._title_template = QLineEdit("Settimana {index:02d}")
+        self._title_template.setStyleSheet(LINE_EDIT_STYLE)
 
         row = QWidget()
-        row_lay = QHBoxLayout(row)
-        row_lay.setContentsMargins(0, 0, 0, 0)
+        row_l = QHBoxLayout(row)
+        row_l.setContentsMargins(0, 0, 0, 0)
+        self._start_index = QSpinBox()
+        self._start_index.setRange(1, 5000)
+        self._start_index.setValue(1)
+        self._count = QSpinBox()
+        self._count.setRange(1, 5000)
+        self._count.setValue(52)
+        row_l.addWidget(QLabel("Indice iniziale"))
+        row_l.addWidget(self._start_index)
+        row_l.addSpacing(12)
+        row_l.addWidget(QLabel("Numero pagine"))
+        row_l.addWidget(self._count)
+        row_l.addStretch()
 
-        self._start_week = QSpinBox()
-        self._start_week.setRange(1, 53)
-        self._start_week.setValue(1)
+        self._custom_titles = QTextEdit()
+        self._custom_titles.setPlaceholderText("Un titolo per riga (es. Sprint 1, Sprint 2, ...)")
+        self._custom_titles.setMinimumHeight(110)
 
-        self._weeks_count = QSpinBox()
-        self._weeks_count.setRange(1, 200)
-        self._weeks_count.setValue(52)
+        hint = QLabel("Placeholder disponibili nel titolo template: {index}, {title}")
+        hint.setStyleSheet("color: #64748B; font-size: 12px;")
 
-        row_lay.addWidget(QLabel("Settimana iniziale"))
-        row_lay.addWidget(self._start_week)
-        row_lay.addSpacing(12)
-        row_lay.addWidget(QLabel("Numero pagine"))
-        row_lay.addWidget(self._weeks_count)
-        row_lay.addStretch()
+        pages_card.add_content(QLabel("Modalità generazione pagine:"))
+        pages_card.add_content(self._mode_combo)
+        pages_card.add_content(QLabel("Titolo template (modalità intervallo):"))
+        pages_card.add_content(self._title_template)
+        pages_card.add_content(row)
+        pages_card.add_content(QLabel("Titoli custom (modalità lista):"))
+        pages_card.add_content(self._custom_titles)
+        pages_card.add_content(hint)
+        lay.addWidget(pages_card)
 
-        self._table_check = QCheckBox("Aggiungi tabella giorni in ogni pagina")
-        self._table_check.setChecked(True)
+        blocks_card = _SectionCard("🧱", "Contenuto pagina (massima personalizzazione)")
+        info = QLabel(
+            "Definisci i blocchi in JSON. Tipi supportati: heading_1, heading_2, heading_3, "
+            "paragraph, table. Nei testi puoi usare {index} e {title}."
+        )
+        info.setWordWrap(True)
+        info.setStyleSheet("color: #64748B; font-size: 12px;")
 
-        self._days_input = QLineEdit("Lunedì, Martedì, Mercoledì, Giovedì, Venerdì, Sabato, Domenica")
-        self._days_input.setStyleSheet(STYLESHEET)
-        self._days_input.setFixedHeight(38)
+        self._blueprint_edit = QTextEdit()
+        self._blueprint_edit.setFont(QFont("Consolas", 10))
+        self._blueprint_edit.setMinimumHeight(180)
+        self._blueprint_edit.setPlainText(DEFAULT_BLUEPRINT)
 
-        pi_lay.addWidget(QLabel("Prefisso titolo pagina:"))
-        pi_lay.addWidget(self._prefix_input)
-        pi_lay.addWidget(row)
-        pi_lay.addWidget(self._table_check)
-        pi_lay.addWidget(QLabel("Giorni (separati da virgola):"))
-        pi_lay.addWidget(self._days_input)
-        pattern_card.add_content(pattern_inner)
-        lay.addWidget(pattern_card)
+        blocks_card.add_content(info)
+        blocks_card.add_content(self._blueprint_edit)
+        lay.addWidget(blocks_card)
 
         action_card = _SectionCard("⚡", "Esecuzione")
         btn_row = QWidget()
@@ -159,6 +174,7 @@ class RepeatedBlocksTool(QWidget):
         lay.addStretch()
         scroll.setWidget(content)
         outer.addWidget(scroll)
+        self._refresh_mode_ui()
 
     def populate_datasources(self, datasources: list):
         self._target_combo.blockSignals(True)
@@ -185,17 +201,25 @@ class RepeatedBlocksTool(QWidget):
         self._run_btn.setText("⏳ Creazione in corso…" if running else "▶  Crea pagine")
 
     def get_config(self) -> dict:
-        days = [d.strip() for d in self._days_input.text().split(",") if d.strip()]
+        custom_titles = [r.strip() for r in self._custom_titles.toPlainText().splitlines() if r.strip()]
         return {
             "name": self._name_input.text().strip() or "Automazione ripetitiva",
             "target_id": self._target_combo.currentData(),
             "title_prop": self._title_prop_combo.currentData() or "Name",
-            "title_prefix": self._prefix_input.text().strip() or "Settimana",
-            "start_week": self._start_week.value(),
-            "weeks_count": self._weeks_count.value(),
-            "with_table": self._table_check.isChecked(),
-            "days": days,
+            "mode": self._mode_combo.currentData(),
+            "title_template": self._title_template.text().strip() or "Pagina {index}",
+            "start_index": self._start_index.value(),
+            "count": self._count.value(),
+            "custom_titles": custom_titles,
+            "blocks_blueprint": self._blueprint_edit.toPlainText().strip() or "[]",
         }
+
+    def _refresh_mode_ui(self):
+        custom_mode = self._mode_combo.currentData() == "custom"
+        self._title_template.setEnabled(not custom_mode)
+        self._start_index.setEnabled(not custom_mode)
+        self._count.setEnabled(not custom_mode)
+        self._custom_titles.setEnabled(custom_mode)
 
     def _on_target_changed(self, _=None):
         ds_id = self._target_combo.currentData()
@@ -229,7 +253,9 @@ class RepeatedBlocksTool(QWidget):
         code = self._code_edit.toPlainText()
         if not code:
             return
-        path, _ = QFileDialog.getSaveFileName(self, "Salva automazione", "automazione_ripetitiva.py", "Python files (*.py)")
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Salva automazione", "automazione_ripetitiva.py", "Python files (*.py)"
+        )
         if path:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(code)

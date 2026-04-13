@@ -5,8 +5,7 @@ import re
 
 def generate_repeated_blocks_code(cfg: dict, target_label: str) -> str:
     cls = re.sub(r"[^A-Za-z0-9]", "", cfg["name"].title().replace(" ", "")) or "RepeatedBlocksAutomation"
-    days = cfg.get("days") or ["Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica"]
-    days_repr = repr(days)
+    custom_titles = cfg.get("custom_titles") or []
 
     return f'''\
 """
@@ -14,11 +13,14 @@ Automazione: {cfg["name"]}
 Destinazione: {target_label}
 """
 
+import json
 import sys
 sys.path.insert(0, ".")
 
 from client.auth import NotionApiClient
 from nModels.datasources import DataSourceFactory
+from nModels.blocks.heading import Heading1, Heading2, Heading3
+from nModels.blocks.paragraph import ParagraphBlock
 from nModels.blocks.table import TableBlock, TableRowBlock
 from nTypes.rich_text import simple_rich_text_list
 
@@ -29,35 +31,67 @@ class {cls}:
     def __init__(self, api_key: str):
         self.api = NotionApiClient(key=api_key)
 
-    def _make_week_props(self, week_no: int):
-        return {{
-            "{cfg['title_prop']}": {{
-                "title": [{{"text": {{"content": "{cfg['title_prefix']} {{:02d}}".format(week_no)}}}}]
-            }}
-        }}
+    def _titles(self):
+        mode = "{cfg['mode']}"
+        if mode == "custom":
+            titles = {repr(custom_titles)}
+            if not titles:
+                raise ValueError("Nessun titolo custom configurato")
+            return titles
 
-    def _build_week_table(self):
-        giorni = {days_repr}
-        header = TableRowBlock.create(cells=[simple_rich_text_list(g) for g in giorni])
-        empty = TableRowBlock.create(cells=[simple_rich_text_list("") for _ in giorni])
-        return TableBlock.create(
-            table_width=len(giorni),
-            has_column_header=True,
-            has_row_header=False,
-            cells=[header, empty],
-        )
+        template = {repr(cfg['title_template'])}
+        start = {cfg['start_index']}
+        total = {cfg['count']}
+        return [template.format(index=i, title="") for i in range(start, start + total)]
+
+    def _render(self, text: str, index: int, title: str):
+        return (text or "").format(index=index, title=title)
+
+    def _blocks_for(self, blueprint: list, index: int, title: str):
+        out = []
+        for item in blueprint:
+            btype = item.get("type", "paragraph")
+            text = self._render(item.get("text", ""), index, title)
+
+            if btype == "heading_1":
+                out.append(Heading1.create(text=text))
+            elif btype == "heading_2":
+                out.append(Heading2.create(text=text))
+            elif btype == "heading_3":
+                out.append(Heading3.create(text=text))
+            elif btype == "paragraph":
+                out.append(ParagraphBlock.create(text=text))
+            elif btype == "table":
+                columns = item.get("columns") or ["Col 1", "Col 2"]
+                rows = int(item.get("rows", 1))
+                header = TableRowBlock.create(cells=[simple_rich_text_list(str(c)) for c in columns])
+                body = [
+                    TableRowBlock.create(cells=[simple_rich_text_list("") for _ in columns])
+                    for _ in range(max(1, rows))
+                ]
+                out.append(TableBlock.create(
+                    table_width=len(columns),
+                    has_column_header=True,
+                    has_row_header=False,
+                    cells=[header] + body,
+                ))
+        return out
 
     def run(self):
         ds = DataSourceFactory.find(self.api.headers, self.TARGET_DS)
-        start = {cfg['start_week']}
-        total = {cfg['weeks_count']}
-        create_table = {cfg['with_table']}
+        title_prop = "{cfg['title_prop']}"
+        blueprint = json.loads({repr(cfg['blocks_blueprint'])})
+        if not isinstance(blueprint, list):
+            raise ValueError("Il blueprint JSON deve essere una lista")
 
-        for week_no in range(start, start + total):
-            page = ds.create_entry(properties=self._make_week_props(week_no))
-            if create_table:
-                page.append_children([self._build_week_table()])
-            print(f"✓ Creata pagina settimana {{week_no:02d}}")
+        titles = self._titles()
+        for i, title in enumerate(titles, start=1):
+            props = {{title_prop: {{"title": [{{"text": {{"content": title}}}}]}}}}
+            page = ds.create_entry(properties=props)
+            blocks = self._blocks_for(blueprint, index=i, title=title)
+            if blocks:
+                page.append_children(blocks)
+            print(f"✓ Creata pagina: {{title}}")
 
 
 if __name__ == "__main__":
