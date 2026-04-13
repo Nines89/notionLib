@@ -1,10 +1,9 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QComboBox,
-    QGroupBox, QScrollArea, QPushButton, QTextEdit,
-    QFileDialog, QMessageBox, QFrame, QHBoxLayout,
+    QScrollArea, QPushButton, QTextEdit,
+    QFileDialog, QMessageBox, QHBoxLayout,
 )
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import pyqtSignal
 
 # Mantengo i tuoi import originali
 from gui.widgets.filter_editor import FilterEditor
@@ -12,56 +11,8 @@ from gui.widgets.sort_editor import SortEditor
 from gui.widgets.mapping_editor import MappingEditor
 
 # --- STILE QSS ---
-STYLESHEET = """
-QWidget {
-    background-color: #0F172A;
-    color: #F1F5F9;
-    font-family: 'Inter', 'Segoe UI', sans-serif;
-}
-QScrollArea { border: none; background-color: #0F172A; }
-_SectionCard {
-    background-color: #1E293B;
-    border: 1px solid #334155;
-    border-radius: 12px;
-}
-QLineEdit, QComboBox {
-    background-color: #0F172A;
-    border: 1px solid #334155;
-    border-radius: 6px;
-    padding: 8px 12px;
-    color: #F1F5F9;
-}
-QLineEdit:focus, QComboBox:focus { border: 2px solid #6366F1; }
-QPushButton#PrimaryBtn {
-    background-color: #6366F1; color: white; font-weight: bold;
-    border-radius: 6px; padding: 10px;
-}
-QPushButton#SecondaryBtn {
-    background-color: transparent; border: 1px solid #334155;
-    color: #CBD5E1; border-radius: 6px;
-}
-QTextEdit {
-    background-color: #020617; border: 1px solid #1E293B;
-    border-radius: 8px; color: #94A3B8; font-family: 'Consolas';
-}
-"""
+from .styles import STYLESHEET, _SectionCard, cp_ds_sections
 
-class _SectionCard(QFrame):
-    def __init__(self, icon: str, title: str, parent=None):
-        super().__init__(parent)
-        self._layout = QVBoxLayout(self)
-        self._layout.setContentsMargins(20, 20, 20, 20)
-        self._layout.setSpacing(15)
-
-        header = QHBoxLayout()
-        title_lbl = QLabel(f"{icon}  {title.upper()}")
-        title_lbl.setStyleSheet("font-size: 11px; font-weight: 800; color: #94A3B8; letter-spacing: 1px;")
-        header.addWidget(title_lbl)
-        header.addStretch()
-        self._layout.addLayout(header)
-
-    def add_content(self, widget):
-        self._layout.addWidget(widget)
 
 class CopyDatasourceTool(QWidget):
     schema_needed = pyqtSignal(str)
@@ -71,6 +22,7 @@ class CopyDatasourceTool(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._schemas: dict = {}
+        # Applichiamo lo stile importato
         self.setStyleSheet(STYLESHEET)
         self._build_ui()
 
@@ -80,79 +32,90 @@ class CopyDatasourceTool(QWidget):
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+
         content = QWidget()
         lay = QVBoxLayout(content)
-        lay.setContentsMargins(30, 30, 30, 30)
-        lay.setSpacing(25)
+        lay.setContentsMargins(40, 40, 40, 40)
+        lay.setSpacing(30)
 
-        # 1. Nome Automazione
+        # 1. NOME
         name_card = _SectionCard("✏️", "Nome Automazione")
         self._name_input = QLineEdit("Copia DataSource")
+        self._name_input.setMinimumHeight(45)
         name_card.add_content(self._name_input)
         lay.addWidget(name_card)
 
-        # 2. Sorgente
+        # 2. SORGENTE
         src_card = _SectionCard("📥", "Sorgente Dati")
         self._src_combo = QComboBox()
+        self._src_combo.setMinimumHeight(45)
         self._src_combo.currentIndexChanged.connect(self._on_src_changed)
+
         self._src_schema_lbl = QLabel("Schema: —")
-        self._src_schema_lbl.setStyleSheet("color: #6366F1; font-size: 11px;")
+        self._src_schema_lbl.setStyleSheet(cp_ds_sections)
+
+        self._filter_editor = FilterEditor()
+        self._filter_editor.setMinimumHeight(300)  # Più spazio per filtri
+
+        self._sort_editor = SortEditor()
+        self._sort_editor.setMinimumHeight(200)
 
         src_card.add_content(self._src_combo)
         src_card.add_content(self._src_schema_lbl)
-
-        # Inizializzazione widget custom (CRITICO)
-        self._filter_editor = FilterEditor()
-        self._sort_editor = SortEditor()
         src_card.add_content(self._filter_editor)
         src_card.add_content(self._sort_editor)
         lay.addWidget(src_card)
 
-        # 3. Destinazione
+        # 3. DESTINAZIONE
         tgt_card = _SectionCard("📤", "Destinazione")
         self._tgt_combo = QComboBox()
+        self._tgt_combo.setMinimumHeight(45)
         self._tgt_combo.currentIndexChanged.connect(self._on_tgt_changed)
+
         self._tgt_schema_lbl = QLabel("Schema: —")
-        self._tgt_schema_lbl.setStyleSheet("color: #6366F1; font-size: 11px;")
+        self._tgt_schema_lbl.setStyleSheet(cp_ds_sections)
+
+        self._mapping_editor = MappingEditor()
+        self._mapping_editor.setMinimumHeight(450)  # Molto spazio per il mapping
 
         tgt_card.add_content(self._tgt_combo)
         tgt_card.add_content(self._tgt_schema_lbl)
-
-        self._mapping_editor = MappingEditor()
         tgt_card.add_content(self._mapping_editor)
         lay.addWidget(tgt_card)
 
-        # 4. Azioni
+        # 4. AZIONI
         btn_layout = QHBoxLayout()
-        self._gen_btn = QPushButton("💾 Genera Codice")
+        self._gen_btn = QPushButton("💾 GENERA CODICE")
         self._gen_btn.setObjectName("SecondaryBtn")
+        self._gen_btn.setMinimumHeight(55)
         self._gen_btn.clicked.connect(self._on_generate)
 
-        self._run_btn = QPushButton("▶ Esegui Ora")
+        self._run_btn = QPushButton("▶ ESEGUI ORA")
         self._run_btn.setObjectName("PrimaryBtn")
+        self._run_btn.setMinimumHeight(55)
         self._run_btn.clicked.connect(self._on_run)
 
         btn_layout.addStretch()
-        btn_layout.addWidget(self._gen_btn)
-        btn_layout.addWidget(self._run_btn)
+        btn_layout.addWidget(self._gen_btn, 1)
+        btn_layout.addWidget(self._run_btn, 1)
         lay.addLayout(btn_layout)
 
-        # 5. Codice e Log
-        code_card = _SectionCard("⚡", "Output")
+        # 5. CONSOLE
+        code_card = _SectionCard("⚡", "Console Output")
         self._code_edit = QTextEdit()
-        self._code_edit.setMinimumHeight(200)
-        self._save_btn = QPushButton("⬇ Salva .py")
+        self._code_edit.setMinimumHeight(300)
+        self._save_btn = QPushButton("⬇ SALVA .PY")
         self._save_btn.setObjectName("SecondaryBtn")
         self._save_btn.clicked.connect(self._on_save)
 
         self._log_edit = QTextEdit()
-        self._log_edit.setMaximumHeight(100)
+        self._log_edit.setMinimumHeight(150)
         self._log_edit.setReadOnly(True)
 
-        code_card.add_content(QLabel("CODICE GENERATO:"))
+        code_card.add_content(QLabel("PYTHON CODE:"))
         code_card.add_content(self._code_edit)
         code_card.add_content(self._save_btn)
-        code_card.add_content(QLabel("LOG ESECUZIONE:"))
+        code_card.add_content(QLabel("LOGS:"))
         code_card.add_content(self._log_edit)
         lay.addWidget(code_card)
 
