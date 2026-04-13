@@ -65,6 +65,7 @@ class MainWindow(QMainWindow):
         self._ws_tab.action_insert_block.connect(self._on_insert_block_requested)
         self._ws_tab.action_add_ds.connect(self._on_create_datasource_requested)
         self._ws_tab.action_add_ds_page.connect(self._on_create_ds_entry_requested)
+        self._ws_tab.action_open_page.connect(self._on_open_page_blocks)
         self._tabs.addTab(self._ws_tab, "  🪐 Panorama  ")
 
         # Tab 2: Automazioni (con tile + stack interno)
@@ -299,6 +300,22 @@ class MainWindow(QMainWindow):
     def _on_insert_block_fail(self, error: str):
         self._status.showMessage("Inserimento fallito.")
         QMessageBox.critical(self, "Errore", f"Impossibile inserire il blocco:\n{error}")
+
+    def _on_open_page_blocks(self, page_id: str):
+        state = get_state()
+        if not state.api:
+            return
+        page_info = state.pages.get(page_id.replace("-", ""))
+        page_title = page_info.get("title", "Pagina") if page_info else "Pagina"
+
+        from gui.widgets.page_blocks_dialog import PageBlocksDialog
+        dialog = PageBlocksDialog(
+            page_id=page_id,
+            page_title=page_title,
+            headers=state.api.headers,
+            parent=self,
+        )
+        dialog.exec()
 
     # ══════════════════════════════════════════════════════════════
     # Create DataSource

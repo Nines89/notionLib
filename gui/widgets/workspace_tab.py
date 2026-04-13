@@ -50,6 +50,7 @@ class WorkspaceTab(QWidget):
     action_add_ds        = pyqtSignal(str)   # db_id
     action_create_db_page = pyqtSignal(str)  # db_id
     action_add_ds_page   = pyqtSignal(str)   # ds_id
+    action_open_page = pyqtSignal(str)   # page_id
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -102,6 +103,7 @@ class WorkspaceTab(QWidget):
         # Abilita menu contestuale custom
         self._tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self._tree.customContextMenuRequested.connect(self._on_context_menu)
+        self._tree.itemDoubleClicked.connect(self._on_item_double_clicked)
 
         lay.addWidget(self._tree)
 
@@ -160,6 +162,12 @@ class WorkspaceTab(QWidget):
             self._menu_datasource(menu, obj_id, item.text(0).strip())
 
         menu.exec(self._tree.viewport().mapToGlobal(pos))
+
+    def _on_item_double_clicked(self, item: QTreeWidgetItem, column: int):
+        obj_type = item.data(0, Qt.ItemDataRole.UserRole)
+        obj_id = item.data(0, Qt.ItemDataRole.UserRole + 1)
+        if obj_type == "pagina" and obj_id:
+            self.action_open_page.emit(obj_id)
 
     def _menu_pagina(self, menu: QMenu, page_id: str, name: str):
         header = QAction(f"🗒  {name}", menu)
