@@ -8,133 +8,9 @@ from PyQt6.QtWidgets import (
     QCheckBox, QFileDialog
 )
 
-CARD_STYLE = """
-QGroupBox {
-    background: #FFFFFF;
-    border: 2px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 20px 16px 16px 16px;
-    margin-top: 8px;
-}
-"""
+# --- STILE QSS ---
+from .styles import STYLESHEET, _SectionCard, cp_ds_sections
 
-LINE_EDIT_STYLE = """
-QLineEdit {
-    border: 2px solid #E2E8F0;
-    border-radius: 8px;
-    padding: 0 12px;
-    font-size: 14px;
-    background: #FFFFFF;
-}
-QLineEdit:focus {
-    border-color: #3B82F6;
-}
-"""
-
-COMBO_STYLE = """
-QComboBox {
-    border: 2px solid #E2E8F0;
-    border-radius: 8px;
-    padding: 0 12px;
-    background: #FFFFFF;
-    font-size: 14px;
-}
-QComboBox:hover {
-    border-color: #CBD5E1;
-}
-QComboBox::drop-down {
-    border: none;
-    width: 30px;
-}
-"""
-
-PRIMARY_BUTTON_STYLE = """
-QPushButton {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-        stop:0 #3B82F6, stop:1 #2563EB);
-    border: none;
-    border-radius: 10px;
-    color: #FFFFFF;
-    font-size: 14px;
-    font-weight: 700;
-}
-QPushButton:hover:enabled {
-    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-        stop:0 #2563EB, stop:1 #1D4ED8);
-}
-QPushButton:disabled {
-    background: #E2E8F0;
-    color: #94A3B8;
-}
-"""
-
-SECONDARY_BUTTON_STYLE = """
-QPushButton {
-    background: #F1F5F9;
-    border: 2px solid #CBD5E1;
-    border-radius: 10px;
-    color: #475569;
-    font-size: 14px;
-    font-weight: 600;
-}
-QPushButton:hover:enabled {
-    background: #E2E8F0;
-    border-color: #94A3B8;
-}
-QPushButton:disabled {
-    background: #F8FAFC;
-    color: #CBD5E1;
-}
-"""
-
-DARK_CODE_STYLE = """
-QTextEdit {
-    background: #1E293B;
-    color: #E2E8F0;
-    border: none;
-    border-radius: 8px;
-    padding: 14px;
-    font-family: 'Consolas', 'Monaco', monospace;
-}
-"""
-
-LOG_STYLE = """
-QTextEdit {
-    background: #F8FAFC;
-    border: 2px solid #E2E8F0;
-    border-radius: 8px;
-    padding: 12px;
-    color: #334155;
-}
-"""
-
-
-class _SectionCard(QGroupBox):
-    def __init__(self, icon: str, title: str, parent=None):
-        super().__init__(parent)
-        self.setTitle("")
-        self.setStyleSheet(CARD_STYLE)
-
-        self._layout = QVBoxLayout(self)
-        self._layout.setSpacing(14)
-
-        header = QWidget()
-        h_lay = QHBoxLayout(header)
-        h_lay.setContentsMargins(0, 0, 0, 0)
-        h_lay.setSpacing(10)
-
-        icon_lbl = QLabel(icon)
-        icon_lbl.setStyleSheet("font-size: 20px;")
-        title_lbl = QLabel(title)
-        title_lbl.setStyleSheet("font-size: 15px; font-weight: 700; color: #1E293B;")
-
-        h_lay.addWidget(icon_lbl)
-        h_lay.addWidget(title_lbl)
-        h_lay.addStretch()
-        self._layout.addWidget(header)
-
-    def add_content(self, widget):
-        self._layout.addWidget(widget)
 
 
 class RepeatedBlocksTool(QWidget):
@@ -154,7 +30,7 @@ class RepeatedBlocksTool(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        scroll.setStyleSheet("background: #F8FAFC;")
+        scroll.setStyleSheet(STYLESHEET)
 
         content = QWidget()
         lay = QVBoxLayout(content)
@@ -164,7 +40,7 @@ class RepeatedBlocksTool(QWidget):
         name_card = _SectionCard("🔁", "Template ripetitivo")
         self._name_input = QLineEdit("Settimane Annuali")
         self._name_input.setFixedHeight(40)
-        self._name_input.setStyleSheet(LINE_EDIT_STYLE)
+        self._name_input.setStyleSheet(STYLESHEET)
         name_card.add_content(self._name_input)
         lay.addWidget(name_card)
 
@@ -175,12 +51,12 @@ class RepeatedBlocksTool(QWidget):
 
         self._target_combo = QComboBox()
         self._target_combo.setFixedHeight(40)
-        self._target_combo.setStyleSheet(COMBO_STYLE)
+        self._target_combo.setStyleSheet(STYLESHEET)
         self._target_combo.currentIndexChanged.connect(self._on_target_changed)
 
         self._title_prop_combo = QComboBox()
         self._title_prop_combo.setFixedHeight(38)
-        self._title_prop_combo.setStyleSheet(COMBO_STYLE)
+        self._title_prop_combo.setStyleSheet(STYLESHEET)
 
         self._schema_lbl = QLabel("Schema: —")
         self._schema_lbl.setStyleSheet("color: #94A3B8; font-size: 12px;")
@@ -200,7 +76,7 @@ class RepeatedBlocksTool(QWidget):
 
         self._prefix_input = QLineEdit("Settimana")
         self._prefix_input.setFixedHeight(38)
-        self._prefix_input.setStyleSheet(LINE_EDIT_STYLE)
+        self._prefix_input.setStyleSheet(STYLESHEET)
 
         row = QWidget()
         row_lay = QHBoxLayout(row)
@@ -225,7 +101,7 @@ class RepeatedBlocksTool(QWidget):
         self._table_check.setChecked(True)
 
         self._days_input = QLineEdit("Lunedì, Martedì, Mercoledì, Giovedì, Venerdì, Sabato, Domenica")
-        self._days_input.setStyleSheet(LINE_EDIT_STYLE)
+        self._days_input.setStyleSheet(STYLESHEET)
         self._days_input.setFixedHeight(38)
 
         pi_lay.addWidget(QLabel("Prefisso titolo pagina:"))
@@ -246,13 +122,13 @@ class RepeatedBlocksTool(QWidget):
         self._gen_btn = QPushButton("💾  Genera codice")
         self._gen_btn.setEnabled(False)
         self._gen_btn.setFixedHeight(44)
-        self._gen_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
+        self._gen_btn.setStyleSheet(STYLESHEET)
         self._gen_btn.clicked.connect(lambda: self.generate_requested.emit(self.get_config()))
 
         self._run_btn = QPushButton("▶  Crea pagine")
         self._run_btn.setEnabled(False)
         self._run_btn.setFixedHeight(44)
-        self._run_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
+        self._run_btn.setStyleSheet(STYLESHEET)
         self._run_btn.clicked.connect(lambda: self.run_requested.emit(self.get_config()))
 
         br.addWidget(self._gen_btn)
@@ -264,7 +140,7 @@ class RepeatedBlocksTool(QWidget):
         self._code_edit = QTextEdit()
         self._code_edit.setFont(QFont("Consolas", 10))
         self._code_edit.setMinimumHeight(200)
-        self._code_edit.setStyleSheet(DARK_CODE_STYLE)
+        self._code_edit.setStyleSheet(STYLESHEET)
         self._save_btn = QPushButton("⬇️  Salva come .py")
         self._save_btn.setEnabled(False)
         self._save_btn.clicked.connect(self._on_save)
@@ -276,7 +152,7 @@ class RepeatedBlocksTool(QWidget):
         self._log_edit = QTextEdit()
         self._log_edit.setReadOnly(True)
         self._log_edit.setMaximumHeight(120)
-        self._log_edit.setStyleSheet(LOG_STYLE)
+        self._log_edit.setStyleSheet(STYLESHEET)
         log_card.add_content(self._log_edit)
         lay.addWidget(log_card)
 
