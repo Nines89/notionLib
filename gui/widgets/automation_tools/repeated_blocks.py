@@ -70,13 +70,13 @@ class RepeatedBlocksTool(QWidget):
 
         pages_card = _SectionCard("🧩", "Tipo di pagine da creare")
         self._mode_combo = QComboBox()
-        self._mode_combo.setStyleSheet(COMBO_STYLE)
+        self._mode_combo.setStyleSheet(STYLESHEET)
         self._mode_combo.addItem("Intervallo dinamico", "range")
         self._mode_combo.addItem("Lista titoli personalizzata", "custom")
         self._mode_combo.currentIndexChanged.connect(self._refresh_mode_ui)
 
         self._title_template = QLineEdit("Settimana {index:02d}")
-        self._title_template.setStyleSheet(LINE_EDIT_STYLE)
+        self._title_template.setStyleSheet(STYLESHEET)
 
         row = QWidget()
         row_l = QHBoxLayout(row)
@@ -122,7 +122,7 @@ class RepeatedBlocksTool(QWidget):
         self._blueprint_edit = QTextEdit()
         self._blueprint_edit.setFont(QFont("Consolas", 10))
         self._blueprint_edit.setMinimumHeight(180)
-        self._blueprint_edit.setPlainText(DEFAULT_BLUEPRINT)
+        self._blueprint_edit.setPlainText(STYLESHEET)
 
         blocks_card.add_content(info)
         blocks_card.add_content(self._blueprint_edit)
