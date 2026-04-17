@@ -51,6 +51,7 @@ class WorkspaceTab(QWidget):
     action_create_db_page = pyqtSignal(str)  # db_id
     action_add_ds_page   = pyqtSignal(str)   # ds_id
     action_open_page = pyqtSignal(str)   # page_id
+    action_open_datasource = pyqtSignal(str)  # ds_id
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -163,11 +164,13 @@ class WorkspaceTab(QWidget):
 
         menu.exec(self._tree.viewport().mapToGlobal(pos))
 
-    def _on_item_double_clicked(self, item: QTreeWidgetItem, column: int):
+    def _on_item_double_clicked(self, item, column: int):
         obj_type = item.data(0, Qt.ItemDataRole.UserRole)
-        obj_id = item.data(0, Qt.ItemDataRole.UserRole + 1)
+        obj_id   = item.data(0, Qt.ItemDataRole.UserRole + 1)
         if obj_type == "pagina" and obj_id:
             self.action_open_page.emit(obj_id)
+        elif obj_type == "datasource" and obj_id:
+            self.action_open_datasource.emit(obj_id)
 
     def _menu_pagina(self, menu: QMenu, page_id: str, name: str):
         header = QAction(f"🗒  {name}", menu)

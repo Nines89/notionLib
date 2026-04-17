@@ -66,6 +66,7 @@ class MainWindow(QMainWindow):
         self._ws_tab.action_add_ds.connect(self._on_create_datasource_requested)
         self._ws_tab.action_add_ds_page.connect(self._on_create_ds_entry_requested)
         self._ws_tab.action_open_page.connect(self._on_open_page_blocks)
+        self._ws_tab.action_open_datasource.connect(self._on_open_datasource)
         self._tabs.addTab(self._ws_tab, "  🪐 Panorama  ")
 
         # Tab 2: Automazioni (con tile + stack interno)
@@ -317,6 +318,38 @@ class MainWindow(QMainWindow):
         )
         dialog.exec()
 
+    def _on_open_datasource(self, ds_id: str):
+        state = get_state()
+        if not state.api:
+            return
+
+        # Cerca info datasource
+        ds_info = next(
+            (ds for ds in state.datasources if ds["id"] == ds_id.replace("-", "")),
+            None,
+        )
+        if not ds_info:
+            return
+
+        ds_name = f"{ds_info['name']}  [{ds_info['db_title']}]"
+        schema = state.ds_schemas.get(ds_id) or state.ds_schemas.get(ds_id.replace("-", ""))
+
+        from gui.widgets.datasource_table_dialog import DataSourceTableDialog
+        dialog = DataSourceTableDialog(
+            ds_id=ds_id,
+            ds_name=ds_name,
+            headers=state.api.headers,
+            schema=schema,  # None → il worker lo carica internamente
+            parent=self,
+        )
+        dialog.exec()
+
+        # Aggiorna cache schema se il worker l'ha caricato (schema era None)
+        # Il worker espone schema via il segnale success; qui lo recuperiamo
+        # direttamente dal DataSourceFactory dopo che il dialog è chiuso
+        # solo se non era già in cache.
+        if not schema and state.api:
+            self._start_schema_load(state.api, ds_id)
     # ══════════════════════════════════════════════════════════════
     # Create DataSource
     # ══════════════════════════════════════════════════════════════
