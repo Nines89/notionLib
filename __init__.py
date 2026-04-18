@@ -9,13 +9,13 @@ Import rapidi:
     from notion_lib.nModels.blocks.base_block import NFactory
     from notion_lib.nTypes.ds_filters import F, S
 """
-from client.auth import NotionApiClient
-from nModels.pages import PageFactory, SimplePage, DatabasePage
-from nModels.databases import DatabaseFactory, NDatabase
-from nModels.datasources import DataSourceFactory, NDataSource
-from nModels.blocks.base_block import NFactory
-from nModels.user import UserFactory
-from nTypes.ds_filters import F, S
+from src.notion_lib.client.auth import NotionApiClient
+from src.notion_lib.nModels.pages import PageFactory, SimplePage, DatabasePage
+from src.notion_lib.nModels.databases import DatabaseFactory, NDatabase
+from src.notion_lib.nModels.datasources import DataSourceFactory, NDataSource
+from src.notion_lib.nModels.blocks.base_block import NFactory
+from src.notion_lib.nModels.user import UserFactory
+from src.notion_lib.nTypes.ds_filters import F, S
 
 __all__ = [
     "NotionApiClient",
