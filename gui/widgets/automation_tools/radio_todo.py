@@ -1,7 +1,7 @@
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QComboBox,
-    QScrollArea, QPushButton, QTextEdit, QHBoxLayout,
+    QScrollArea, QPushButton, QTextEdit, QHBoxLayout, QFileDialog,
 )
 
 from .styles import STYLESHEET, _SectionCard, cp_ds_sections
@@ -10,6 +10,7 @@ from .styles import STYLESHEET, _SectionCard, cp_ds_sections
 class RadioTodoTool(QWidget):
     schema_needed = pyqtSignal(str)
     entries_needed = pyqtSignal(str)
+    generate_requested = pyqtSignal(dict)
     run_requested = pyqtSignal(dict)
 
     def __init__(self, parent=None):
@@ -80,14 +81,31 @@ class RadioTodoTool(QWidget):
         row = QWidget()
         rl = QHBoxLayout(row)
         rl.setContentsMargins(0, 0, 0, 0)
+        self._gen_btn = QPushButton("💾 Genera codice")
+        self._gen_btn.setObjectName("SecondaryBtn")
+        self._gen_btn.setMinimumHeight(50)
+        self._gen_btn.setEnabled(False)
+        self._gen_btn.clicked.connect(lambda: self.generate_requested.emit(self.get_config()))
         self._run_btn = QPushButton("▶ Applica radio")
         self._run_btn.setObjectName("PrimaryBtn")
         self._run_btn.setMinimumHeight(50)
         self._run_btn.setEnabled(False)
         self._run_btn.clicked.connect(lambda: self.run_requested.emit(self.get_config()))
+        rl.addWidget(self._gen_btn)
         rl.addWidget(self._run_btn)
         action_card.add_content(row)
         lay.addWidget(action_card)
+
+        code_card = _SectionCard("</>", "Codice generato")
+        self._code_edit = QTextEdit()
+        self._code_edit.setMinimumHeight(240)
+        self._save_btn = QPushButton("⬇ Salva .py")
+        self._save_btn.setObjectName("SecondaryBtn")
+        self._save_btn.setEnabled(False)
+        self._save_btn.clicked.connect(self._on_save)
+        code_card.add_content(self._code_edit)
+        code_card.add_content(self._save_btn)
+        lay.addWidget(code_card)
 
         log_card = _SectionCard("📋", "Log")
         self._log_edit = QTextEdit()
@@ -124,6 +142,10 @@ class RadioTodoTool(QWidget):
     def show_log(self, lines: list):
         self._log_edit.setPlainText("\n".join(lines))
 
+    def set_code(self, code: str):
+        self._code_edit.setPlainText(code)
+        self._save_btn.setEnabled(bool(code))
+
     def set_running(self, running: bool):
         self._run_btn.setEnabled(not running)
         self._run_btn.setText("⏳ Applicazione..." if running else "▶ Applica radio")
@@ -135,6 +157,9 @@ class RadioTodoTool(QWidget):
             "todo_prop": self._todo_prop_combo.currentData(),
             "entry_id": self._entry_combo.currentData(),
         }
+
+    def selected_entry_label(self) -> str:
+        return self._entry_combo.currentText().strip() or "—"
 
     def _on_ds_changed(self, _=None):
         ds_id = self._ds_combo.currentData()
@@ -185,8 +210,20 @@ class RadioTodoTool(QWidget):
             and self._todo_prop_combo.currentData()
             and self._entry_combo.currentData()
         )
+        self._gen_btn.setEnabled(ready)
         self._run_btn.setEnabled(ready)
 
     @staticmethod
     def _normalize_id(value):
         return (value or "").replace("-", "")
+
+    def _on_save(self):
+        code = self._code_edit.toPlainText()
+        if not code:
+            return
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Salva automazione", "radio_todo_automation.py", "Python files (*.py)"
+        )
+        if path:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(code)

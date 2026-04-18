@@ -120,6 +120,7 @@ class MainWindow(QMainWindow):
         self._repeat_tool.run_requested.connect(self._on_repeat_run)
         self._radio_todo_tool.schema_needed.connect(self._on_schema_needed)
         self._radio_todo_tool.entries_needed.connect(self._on_entries_needed)
+        self._radio_todo_tool.generate_requested.connect(self._on_radio_todo_generate)
         self._radio_todo_tool.run_requested.connect(self._on_radio_todo_run)
 
         # ── Status bar ────────────────────────────────────────────
@@ -547,6 +548,23 @@ class MainWindow(QMainWindow):
     # ══════════════════════════════════════════════════════════════
     # Radio To-Do tool — esecuzione
     # ══════════════════════════════════════════════════════════════
+
+    def _on_radio_todo_generate(self, cfg: dict):
+        from gui.logic.radio_todo_codegen import generate_radio_todo_code
+        state = get_state()
+
+        def ds_label(ds_id: str) -> str:
+            for d in state.datasources:
+                if d["id"] == ds_id:
+                    return f"{d['name']}  [{d['db_title']}]"
+            return ds_id or "—"
+
+        code = generate_radio_todo_code(
+            cfg=cfg,
+            ds_label=ds_label(cfg["ds_id"]),
+            entry_label=self._radio_todo_tool.selected_entry_label(),
+        )
+        self._radio_todo_tool.set_code(code)
 
     def _on_radio_todo_run(self, cfg: dict):
         state = get_state()
