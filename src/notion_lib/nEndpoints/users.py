@@ -1,10 +1,10 @@
-from src.notion_lib.client.https import NGET
-from src.notion_lib.utils.utils import check_url_or_id
+from notion_lib.client.https import NGET
+from notion_lib.utils.utils import check_url_or_id
 
 try:
     from mixed import find_parent_type
 except ModuleNotFoundError:
-    from src.notion_lib.nEndpoints.mixed import find_parent_type
+    from notion_lib.nEndpoints.mixed import find_parent_type
 
 BASE = "https://api.notion.com/v1/users"
 
@@ -23,7 +23,7 @@ def get_bot_token(headers):
 
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
+    from notion_lib.client.auth import NotionApiClient
     api = NotionApiClient(key="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")
 
     ################### GET ALL USERS EXAMPLE #######################################################

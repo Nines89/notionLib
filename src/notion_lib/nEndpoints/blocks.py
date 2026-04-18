@@ -1,5 +1,5 @@
-from src.notion_lib.client.https import NGET, NPATCH, NDEL
-from src.notion_lib.utils.utils import check_url_or_id
+from notion_lib.client.https import NGET, NPATCH, NDEL
+from notion_lib.utils.utils import check_url_or_id
 
 BASE = "https://api.notion.com/v1/blocks"
 
@@ -43,7 +43,7 @@ def append_children(headers, block_id, children: list[dict]):
 
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
+    from notion_lib.client.auth import NotionApiClient
 
     api = NotionApiClient(key="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")
     blk_id = "2a7b7a8f729480b3b420f8736c4116d7"

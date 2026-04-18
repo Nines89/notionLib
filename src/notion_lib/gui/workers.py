@@ -18,7 +18,7 @@ class ConnectWorker(QThread):
 
     def run(self):
         try:
-            from src.notion_lib.gui.logic.connector import connect
+            from notion_lib.gui.logic.connector import connect
             api, bot, dbs, dss, pages = connect(self._api_key)
             self.success.emit(api, bot, dbs, dss, pages)
         except Exception as e:
@@ -37,7 +37,7 @@ class LoadSchemaWorker(QThread):
 
     def run(self):
         try:
-            from src.notion_lib.gui.logic.connector import load_schema
+            from notion_lib.gui.logic.connector import load_schema
             schema = load_schema(self._api, self._ds_id)
             self.success.emit(self._ds_id, schema)
         except Exception as e:
@@ -56,7 +56,7 @@ class LoadEntriesWorker(QThread):
 
     def run(self):
         try:
-            from src.notion_lib.gui.logic.radio_todo_runner import list_entries
+            from notion_lib.gui.logic.radio_todo_runner import list_entries
             entries = list_entries(self._api, self._ds_id)
             self.success.emit(self._ds_id, entries)
         except Exception as e:
@@ -82,7 +82,7 @@ class RunWorker(QThread):
 
     def run(self):
         try:
-            from src.notion_lib.gui.logic.runner import run_automation
+            from notion_lib.gui.logic.runner import run_automation
             log = run_automation(
                 self._api, self._src_id, self._tgt_id,
                 self._src_schema, self._tgt_schema,
@@ -106,7 +106,7 @@ class InsertBlockWorker(QThread):
 
     def run(self):
         try:
-            from src.notion_lib.nModels.pages import PageFactory
+            from notion_lib.nModels.pages import PageFactory
             page = PageFactory.find(self._api.headers, self._page_id)
             page.append_children([self._block])
             self.success.emit(f"Blocco '{self._block.type}' inserito con successo!")
@@ -128,7 +128,7 @@ class CreateDataSourceWorker(QThread):
 
     def run(self):
         try:
-            from src.notion_lib.nModels.datasources import NDataSource
+            from notion_lib.nModels.datasources import NDataSource
             ds = NDataSource.create(
                 headers=self._api.headers,
                 title=self._name,
@@ -157,7 +157,7 @@ class CreateDSEntryWorker(QThread):
 
     def run(self):
         try:
-            from src.notion_lib.nModels.datasources import DataSourceFactory
+            from notion_lib.nModels.datasources import DataSourceFactory
             ds = DataSourceFactory.find(self._api.headers, self._ds_id)
 
             # Crea entry o template
@@ -203,10 +203,10 @@ class CreateRepeatedBlocksWorker(QThread):
         return (text or "").format(index=index, title=title)
 
     def _build_blocks(self, blueprint: list, index: int, title: str):
-        from src.notion_lib.nModels.blocks.heading import Heading1, Heading2, Heading3
-        from src.notion_lib.nModels.blocks.paragraph import ParagraphBlock
-        from src.notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
-        from src.notion_lib.nTypes.rich_text import simple_rich_text_list
+        from notion_lib.nModels.blocks.heading import Heading1, Heading2, Heading3
+        from notion_lib.nModels.blocks.paragraph import ParagraphBlock
+        from notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
+        from notion_lib.nTypes.rich_text import simple_rich_text_list
 
         blocks = []
         for item in blueprint:
@@ -241,7 +241,7 @@ class CreateRepeatedBlocksWorker(QThread):
         log = []
         try:
             import json
-            from src.notion_lib.nModels.datasources import DataSourceFactory
+            from notion_lib.nModels.datasources import DataSourceFactory
 
             ds = DataSourceFactory.find(self._api.headers, self._cfg["target_id"])
             title_prop = self._cfg["title_prop"]
@@ -280,7 +280,7 @@ class RunRadioTodoWorker(QThread):
 
     def run(self):
         try:
-            from src.notion_lib.gui.logic.radio_todo_runner import run_radio_todo
+            from notion_lib.gui.logic.radio_todo_runner import run_radio_todo
             log = run_radio_todo(
                 api=self._api,
                 ds_id=self._cfg["ds_id"],

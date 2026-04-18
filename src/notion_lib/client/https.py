@@ -3,8 +3,8 @@ from functools import lru_cache
 
 import certifi
 
-from src.notion_lib.client.errors import ERROR_MAP, NotionError
-from src.notion_lib.client.rate_limit import handle_rate_limit
+from notion_lib.client.errors import ERROR_MAP, NotionError
+from notion_lib.client.rate_limit import handle_rate_limit
 
 
 @lru_cache(maxsize=2048)

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from src.notion_lib.nModels.base_object import NObj
-from src.notion_lib.nEndpoints.blocks import (
+from notion_lib.nModels.base_object import NObj
+from notion_lib.nEndpoints.blocks import (
     get_block,
     get_block_children,
     update_block,
@@ -29,8 +29,8 @@ def _ensure_registry_populated():
     """
     if len(_BLOCK_REGISTRY) > 3:   # paragraph + unsupported già registrati + check for meetings
         return
-    import src.notion_lib.nModels.blocks.list_blocks  # noqa: F401
-    import src.notion_lib.nModels.blocks.meeting_notes  # noqa: F401
+    import notion_lib.nModels.blocks.list_blocks  # noqa: F401
+    import notion_lib.nModels.blocks.meeting_notes  # noqa: F401
 
 
 class BlockError(Exception):
@@ -104,7 +104,7 @@ class BlockImpl(ABC):
         # FIX: era `child.__class__ not in ["ChildDatabaseBlock", ...]`
         # confronto classe/stringa sempre True → filtro inoperante.
         # Ora import locale per evitare circolarità + isinstance corretto.
-        from src.notion_lib.nModels.blocks.special_blocks import ChildDatabaseBlock, ChildPageBlock
+        from notion_lib.nModels.blocks.special_blocks import ChildDatabaseBlock, ChildPageBlock
         to_send = [
             child.to_payload()
             for child in children

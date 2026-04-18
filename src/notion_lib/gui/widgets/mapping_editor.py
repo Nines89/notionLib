@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
-from src.notion_lib.gui.constants import WRITABLE_TYPES
+from notion_lib.gui.constants import WRITABLE_TYPES
 
 
 class MappingEditor(QGroupBox):

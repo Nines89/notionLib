@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
-from src.notion_lib.utils.constants import DbFieldType
+notion_lib.utils.constants import DbFieldType
 
 
 class PropertyRow:

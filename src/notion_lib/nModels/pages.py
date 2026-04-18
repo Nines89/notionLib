@@ -1,19 +1,19 @@
 from __future__ import annotations
 from typing import Optional
 
-from src.notion_lib.nModels.base_object import NObj
-from src.notion_lib.nEndpoints.pages import (
+from notion_lib.nModels.base_object import NObj
+from notion_lib.nEndpoints.pages import (
     get_page,
     update_page,
     trash_page,
     restore_page,
     get_block_children,
 )
-from src.notion_lib.nEndpoints.blocks import append_children as _append_children
-from src.notion_lib.nTypes.icons import IconFactory
-from src.notion_lib.nTypes.files import n_file, FileTypeExternal
-from src.notion_lib.nTypes.page_properties import PropertyValue, PropertyFactory
-from src.notion_lib.utils.utils import check_url_or_id, resolve_response
+from notion_lib.nEndpoints.blocks import append_children as _append_children
+from notion_lib.nTypes.icons import IconFactory
+from notion_lib.nTypes.files import n_file, FileTypeExternal
+from notion_lib.nTypes.page_properties import PropertyValue, PropertyFactory
+from notion_lib.utils.utils import check_url_or_id, resolve_response
 
 
 class PageError(Exception):
@@ -70,7 +70,7 @@ class NPage(NObj):
     # ── children ────────────────────────────────────
 
     def get_children(self) -> list:
-        from src.notion_lib.nModels.blocks.base_block import NFactory
+        from notion_lib.nModels.blocks.base_block import NFactory
         raw_blocks = get_block_children(self.headers, self.obj_id)
         return [NFactory.find(self.headers, blk["id"]) for blk in raw_blocks]
 
@@ -137,7 +137,7 @@ class SimplePage(NPage):
         self._title = value
 
     def to_payload(self) -> dict:
-        from src.notion_lib.nTypes.rich_text import simple_rich_text_list
+        from notion_lib.nTypes.rich_text import simple_rich_text_list
         return {
             "properties": {
                 "title": {"title": simple_rich_text_list(self._title).to_dict()}
@@ -151,7 +151,7 @@ class SimplePage(NPage):
                title: str,
                icon=None,
                cover=None) -> "SimplePage":
-        from src.notion_lib.client.https import NPOST
+        from notion_lib.client.https import NPOST
         parent_id = check_url_or_id(parent_id)
         payload: dict = {
             "parent": {"page_id": parent_id},
@@ -230,7 +230,7 @@ class DatabasePage(NPage):
                properties: dict,
                icon=None,
                cover=None) -> "DatabasePage":
-        from src.notion_lib.client.https import NPOST
+        from notion_lib.client.https import NPOST
         parent_db_id = check_url_or_id(parent_db_id)
         payload: dict = {
             "parent": {"data_source_id": parent_db_id},
@@ -278,7 +278,7 @@ class PageFactory:
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
+    from notion_lib.client.auth import NotionApiClient
 
     api = NotionApiClient(key="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")
 

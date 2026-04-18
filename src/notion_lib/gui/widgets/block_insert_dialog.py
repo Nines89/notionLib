@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
-from src.notion_lib.utils.constants import NColors, NLanguage
+notion_lib.utils.constants import NColors, NLanguage
 
 
 # ── Form per tipi di blocco ───────────────────────────────────────
@@ -39,7 +39,7 @@ class ParagraphForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.paragraph import ParagraphBlock
+        notion_lib.nModels.blocks.paragraph import ParagraphBlock
         text = self.text_input.toPlainText().strip()
         if not text:
             raise ValueError("Il testo non può essere vuoto")
@@ -73,7 +73,7 @@ class HeadingForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.heading import Heading1, Heading2, Heading3
+        notion_lib.nModels.blocks.heading import Heading1, Heading2, Heading3
         text = self.text_input.text().strip()
         if not text:
             raise ValueError("Il titolo non può essere vuoto")
@@ -102,7 +102,7 @@ class ToDoForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.list_blocks import ToDo
+        notion_lib.nModels.blocks.list_blocks import ToDo
         text = self.text_input.text().strip()
         if not text:
             raise ValueError("Il testo non può essere vuoto")
@@ -120,7 +120,7 @@ class BulletForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.list_blocks import BulletedListItem
+        notion_lib.nModels.blocks.list_blocks import BulletedListItem
         text = self.text_input.text().strip()
         if not text:
             raise ValueError("Il testo non può essere vuoto")
@@ -138,7 +138,7 @@ class NumberedForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.list_blocks import NumberedListItem
+        notion_lib.nModels.blocks.list_blocks import NumberedListItem
         text = self.text_input.text().strip()
         if not text:
             raise ValueError("Il testo non può essere vuoto")
@@ -171,8 +171,8 @@ class CalloutForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.special_blocks import CalloutBlock
-        from src.notion_lib.nTypes.icons import NEmoji
+        notion_lib.nModels.blocks.special_blocks import CalloutBlock
+        notion_lib.nTypes.icons import NEmoji
         text = self.text_input.toPlainText().strip()
         if not text:
             raise ValueError("Il testo non può essere vuoto")
@@ -214,7 +214,7 @@ class CodeForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.special_blocks import CodeBlock
+        notion_lib.nModels.blocks.special_blocks import CodeBlock
         code = self.code_input.toPlainText().strip()
         if not code:
             raise ValueError("Il codice non può essere vuoto")
@@ -237,7 +237,7 @@ class QuoteForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.special_blocks import QuoteBlock
+        notion_lib.nModels.blocks.special_blocks import QuoteBlock
         text = self.text_input.toPlainText().strip()
         if not text:
             raise ValueError("Il testo non può essere vuoto")
@@ -255,7 +255,7 @@ class DividerForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.special_blocks import DividerBlock
+        notion_lib.nModels.blocks.special_blocks import DividerBlock
         return DividerBlock.create()
 
 
@@ -277,7 +277,7 @@ class BookmarkForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.special_blocks import BookmarkBlock
+        notion_lib.nModels.blocks.special_blocks import BookmarkBlock
         url = self.url_input.text().strip()
         if not url:
             raise ValueError("L'URL non può essere vuoto")
@@ -304,7 +304,7 @@ class EquationForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.special_blocks import EquationBlock
+        notion_lib.nModels.blocks.special_blocks import EquationBlock
         expr = self.expr_input.text().strip()
         if not expr:
             raise ValueError("L'espressione non può essere vuota")
@@ -395,8 +395,8 @@ class TableForm(QWidget):
                 self.table.setItem(r, c, item)
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
-        from src.notion_lib.nTypes.rich_text import simple_rich_text_list
+        notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
+        notion_lib.nTypes.rich_text import simple_rich_text_list
 
         rows = self.rows_spin.value()
         cols = self.cols_spin.value()
@@ -444,7 +444,7 @@ class ToggleForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.list_blocks import Toggle
+        notion_lib.nModels.blocks.list_blocks import Toggle
         text = self.text_input.text().strip()
         if not text:
             raise ValueError("Il testo non può essere vuoto")
@@ -474,8 +474,8 @@ class ImageForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.media import Image
-        from src.notion_lib.nTypes.files import FileTypeExternal
+        notion_lib.nModels.blocks.media import Image
+        notion_lib.nTypes.files import FileTypeExternal
         url = self.url_input.text().strip()
         if not url:
             raise ValueError("L'URL non può essere vuoto")
@@ -512,7 +512,7 @@ class VideoForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.media import Video
+        notion_lib.nModels.blocks.media import Video
         url = self.url_input.text().strip()
         if not url:
             raise ValueError("L'URL non può essere vuoto")
@@ -548,7 +548,7 @@ class EmbedForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.media import Embed
+        notion_lib.nModels.blocks.media import Embed
         url = self.url_input.text().strip()
         if not url:
             raise ValueError("L'URL non può essere vuoto")
@@ -580,8 +580,8 @@ class FileForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.media import File
-        from src.notion_lib.nTypes.files import FileTypeExternal
+        notion_lib.nModels.blocks.media import File
+        notion_lib.nTypes.files import FileTypeExternal
         url = self.url_input.text().strip()
         if not url:
             raise ValueError("L'URL non può essere vuoto")
@@ -617,7 +617,7 @@ class TocForm(QWidget):
         lay.addStretch()
 
     def get_block(self):
-        from src.notion_lib.nModels.blocks.special_blocks import TableOfContentsBlock
+        notion_lib.nModels.blocks.special_blocks import TableOfContentsBlock
         return TableOfContentsBlock.create(color=self.color_combo.currentData())
 
 # ── Dialog principale ─────────────────────────────────────────────

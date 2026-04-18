@@ -10,19 +10,19 @@ from PyQt6.QtWidgets import (
     QStatusBar, QMessageBox, QFrame, QDialog
 )
 
-from src.notion_lib.gui.state import get_state, reset_state
-from src.notion_lib.gui.workers import (
+from notion_lib.gui.state import get_state, reset_state
+from notion_lib.gui.workers import (
     ConnectWorker, LoadSchemaWorker, LoadEntriesWorker,
     RunWorker, CreateRepeatedBlocksWorker, RunRadioTodoWorker,
 )
-from src.notion_lib.gui.logic.codegen import generate
+from notion_lib.gui.logic.codegen import generate
 
-from src.notion_lib.gui.widgets.sidebar import SidebarWidget
-from src.notion_lib.gui.widgets.workspace_tab import WorkspaceTab
-from src.notion_lib.gui.widgets.automations_tab import AutomationsTab
-from src.notion_lib.gui.widgets.automation_tools.copy_datasource import CopyDatasourceTool
-from src.notion_lib.gui.widgets.automation_tools.repeated_blocks import RepeatedBlocksTool
-from src.notion_lib.gui.widgets.automation_tools.radio_todo import RadioTodoTool
+from notion_lib.gui.widgets.sidebar import SidebarWidget
+from notion_lib.gui.widgets.workspace_tab import WorkspaceTab
+from notion_lib.gui.widgets.automations_tab import AutomationsTab
+from notion_lib.gui.widgets.automation_tools.copy_datasource import CopyDatasourceTool
+from notion_lib.gui.widgets.automation_tools.repeated_blocks import RepeatedBlocksTool
+from notion_lib.gui.widgets.automation_tools.radio_todo import RadioTodoTool
 
 
 class MainWindow(QMainWindow):
@@ -316,7 +316,7 @@ class MainWindow(QMainWindow):
         page_info = state.pages.get(page_id.replace("-", ""))
         page_title = page_info.get("title", "Pagina") if page_info else "Pagina"
 
-        from src.notion_lib.gui.widgets.block_insert_dialog import InsertBlockDialog
+        from notion_lib.gui.widgets.block_insert_dialog import InsertBlockDialog
         dialog = InsertBlockDialog(page_title, parent=self)
 
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -326,7 +326,7 @@ class MainWindow(QMainWindow):
 
             self._status.showMessage("Inserimento blocco in corso...")
 
-            from src.notion_lib.gui.workers import InsertBlockWorker
+            from notion_lib.gui.workers import InsertBlockWorker
             w = InsertBlockWorker(state.api, page_id, block)
             w.success.connect(self._on_insert_block_ok)
             w.failure.connect(self._on_insert_block_fail)
@@ -349,7 +349,7 @@ class MainWindow(QMainWindow):
         page_info = state.pages.get(page_id.replace("-", ""))
         page_title = page_info.get("title", "Pagina") if page_info else "Pagina"
 
-        from src.notion_lib.gui.widgets.page_blocks_dialog import PageBlocksDialog
+        from notion_lib.gui.widgets.page_blocks_dialog import PageBlocksDialog
         dialog = PageBlocksDialog(
             page_id=page_id,
             page_title=page_title,
@@ -374,7 +374,7 @@ class MainWindow(QMainWindow):
         ds_name = f"{ds_info['name']}  [{ds_info['db_title']}]"
         schema = state.ds_schemas.get(ds_id) or state.ds_schemas.get(ds_id.replace("-", ""))
 
-        from src.notion_lib.gui.widgets.datasource_table_dialog import DataSourceTableDialog
+        from notion_lib.gui.widgets.datasource_table_dialog import DataSourceTableDialog
         dialog = DataSourceTableDialog(
             ds_id=ds_id,
             ds_name=ds_name,
@@ -400,7 +400,7 @@ class MainWindow(QMainWindow):
         db_info = state.databases.get(db_id.replace("-", ""))
         db_title = db_info.get("title", "Database") if db_info else "Database"
 
-        from src.notion_lib.gui.widgets.datasource_create_dialog import DataSourceCreateDialog
+        from notion_lib.gui.widgets.datasource_create_dialog import DataSourceCreateDialog
         from PyQt6.QtWidgets import QDialog
 
         dialog = DataSourceCreateDialog(db_id, db_title, parent=self)
@@ -410,7 +410,7 @@ class MainWindow(QMainWindow):
 
             self._status.showMessage("Creazione datasource in corso...")
 
-            from src.notion_lib.gui.workers import CreateDataSourceWorker
+            from notion_lib.gui.workers import CreateDataSourceWorker
             w = CreateDataSourceWorker(
                 state.api,
                 cfg["db_id"],
@@ -480,7 +480,7 @@ class MainWindow(QMainWindow):
 
         schema = state.ds_schemas[ds_id]
 
-        from src.notion_lib.gui.widgets.datasource_entry_dialog import DataSourceEntryDialog
+        from notion_lib.gui.widgets.datasource_entry_dialog import DataSourceEntryDialog
         from PyQt6.QtWidgets import QDialog
 
         dialog = DataSourceEntryDialog(ds_id, ds_name, schema, parent=self)
@@ -490,7 +490,7 @@ class MainWindow(QMainWindow):
 
             self._status.showMessage("Creazione entry in corso...")
 
-            from src.notion_lib.gui.workers import CreateDSEntryWorker
+            from notion_lib.gui.workers import CreateDSEntryWorker
             w = CreateDSEntryWorker(state.api, ds_id, props)
             w.success.connect(self._on_create_ds_entry_ok)
             w.failure.connect(self._on_create_ds_entry_fail)
@@ -511,7 +511,7 @@ class MainWindow(QMainWindow):
     # ══════════════════════════════════════════════════════════════
 
     def _on_repeat_generate(self, cfg: dict):
-        from src.notion_lib.gui.logic.repeated_blocks_codegen import generate_repeated_blocks_code
+        from notion_lib.gui.logic.repeated_blocks_codegen import generate_repeated_blocks_code
         state = get_state()
 
         def ds_label(ds_id: str) -> str:
@@ -550,7 +550,7 @@ class MainWindow(QMainWindow):
     # ══════════════════════════════════════════════════════════════
 
     def _on_radio_todo_generate(self, cfg: dict):
-        from src.notion_lib.gui.logic.radio_todo_codegen import generate_radio_todo_code
+        from notion_lib.gui.logic.radio_todo_codegen import generate_radio_todo_code
         state = get_state()
 
         def ds_label(ds_id: str) -> str:

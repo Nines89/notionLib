@@ -37,12 +37,12 @@ Struttura
 
 import sys
 
-from src.notion_lib.nModels import ParagraphBlock
-from src.notion_lib.nTypes import IconFactory
+from notion_lib.nModels import ParagraphBlock
+from notion_lib.nTypes import IconFactory
 
 sys.path.insert(0, "")
 
-from src.notion_lib.client.auth import NotionApiClient
+from notion_lib.client.auth import NotionApiClient
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG — sostituisci con la tua chiave se necessario
@@ -129,7 +129,7 @@ def example_auth():
     single_sep()
     # Bot token (whoami)
     print("Retrieve bot user for given API")
-    from src.notion_lib.nEndpoints.users import get_bot_token
+    from notion_lib.nEndpoints.users import get_bot_token
     me = get_bot_token(api.headers)
     print("Bot name:", me.response.get("name"))
     print("Bot type:", me.response.get("type"))
@@ -141,9 +141,9 @@ def example_auth():
 
 def example_paragraph():
     sep("2. Blocks — Paragraph")
-    from src.notion_lib.nModels.blocks.base_block import NFactory
-    from src.notion_lib.nModels.blocks.paragraph import ParagraphBlock
-    from src.notion_lib.utils.constants import NColors
+    from notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.nModels.blocks.paragraph import ParagraphBlock
+    from notion_lib.utils.constants import NColors
 
     api = NotionApiClient(key=API_KEY)
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
@@ -179,9 +179,9 @@ def example_paragraph():
 
 def example_headings():
     sep("3. Blocks — Headings")
-    from src.notion_lib.nModels.blocks.base_block import NFactory
-    from src.notion_lib.nModels.blocks.heading import Heading3
-    from src.notion_lib.utils.constants import NColors
+    from notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.nModels.blocks.heading import Heading3
+    from notion_lib.utils.constants import NColors
 
     api = NotionApiClient(key=API_KEY)
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
@@ -218,9 +218,9 @@ def example_headings():
 
 def example_list_blocks():
     sep("4. Blocks — List blocks")
-    from src.notion_lib.nModels.blocks.base_block import NFactory
-    from src.notion_lib.nModels.blocks.list_blocks import Toggle
-    from src.notion_lib.utils.constants import NColors
+    from notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.nModels.blocks.list_blocks import Toggle
+    from notion_lib.utils.constants import NColors
 
     api = NotionApiClient(key=API_KEY)
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
@@ -263,8 +263,8 @@ def example_list_blocks():
 
 def example_media():
     sep("5. Blocks — Media")
-    from src.notion_lib.nModels.blocks.base_block import NFactory
-    from src.notion_lib.nTypes.files import FileTypeExternal
+    from notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.nTypes.files import FileTypeExternal
 
     api = NotionApiClient(key=API_KEY)
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
@@ -294,7 +294,7 @@ def example_media():
     print("Embed URL:", embed.url)
 
     # Aggiungi un'immagine esterna come figlio del toggle padre
-    from src.notion_lib.nModels.blocks.media import Image
+    from notion_lib.nModels.blocks.media import Image
     new_img = Image.create("nuova immagine", FileTypeExternal("https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Siege_of_Peking%2C_Boxer_Rebellion.jpg/250px-Siege_of_Peking%2C_Boxer_Rebellion.jpg"))
     father.append_children([new_img])
     print("Nuova immagine aggiunta come figlio ✓")
@@ -306,9 +306,9 @@ def example_media():
 
 def example_table():
     sep("6. Blocks — Table")
-    from src.notion_lib.nModels.blocks.base_block import NFactory
-    from src.notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
-    from src.notion_lib.nTypes.rich_text import simple_rich_text_list
+    from notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
+    from notion_lib.nTypes.rich_text import simple_rich_text_list
 
     api = NotionApiClient(key=API_KEY)
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
@@ -351,14 +351,14 @@ def example_table():
 
 def example_special_blocks():
     sep("7. Blocks — Special")
-    from src.notion_lib.nModels.blocks.base_block import NFactory
-    from src.notion_lib.nModels.blocks.special_blocks import (
+    from notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.nModels.blocks.special_blocks import (
         CalloutBlock, CodeBlock, EquationBlock, BookmarkBlock,
         DividerBlock, ColumnListBlock,
     )
-    from src.notion_lib.nModels.blocks.paragraph import ParagraphBlock
-    from src.notion_lib.nTypes.icons import NEmoji
-    from src.notion_lib.utils.constants import NColors, NLanguage
+    from notion_lib.nModels.blocks.paragraph import ParagraphBlock
+    from notion_lib.nTypes.icons import NEmoji
+    from notion_lib.utils.constants import NColors, NLanguage
 
     api = NotionApiClient(key=API_KEY)
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
@@ -451,8 +451,8 @@ def example_special_blocks():
 
 def example_structural_blocks():
     sep("8. Blocks — Synced / Breadcrumb / ChildPage / ChildDB")
-    from src.notion_lib.nModels.blocks.base_block import NFactory
-    from src.notion_lib.nModels.blocks.special_blocks import (
+    from notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.nModels.blocks.special_blocks import (
         BreadcrumbBlock, )
 
     api = NotionApiClient(key=API_KEY)
@@ -491,13 +491,13 @@ def example_structural_blocks():
 
 def example_readonly_blocks():
     sep("9. Blocks — LinkToPage / LinkPreview (read-only)")
-    from src.notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.nModels.blocks.base_block import NFactory
 
     api = NotionApiClient(key=API_KEY)
 
     # Per trovare un link_to_page/link_preview devi avere il loro block_id.
     # Scorri i figli della pagina principale per trovarne uno.
-    from src.notion_lib.nEndpoints.pages import get_block_children
+    from notion_lib.nEndpoints.pages import get_block_children
     children = get_block_children(api.headers, PAGE_ID)
     for blk in children:
         t = blk.get("type")
@@ -521,7 +521,7 @@ def example_readonly_blocks():
 
 def example_meeting_notes():
     sep("10. Blocks — Meeting Notes")
-    from src.notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.nModels.blocks.base_block import NFactory
 
     api = NotionApiClient(key=API_KEY)
     meeting = NFactory.find(api.headers, BLK_MEETING)
@@ -560,9 +560,9 @@ def example_meeting_notes():
 
 def example_simple_page():
     sep("11. Pages — SimplePage")
-    from src.notion_lib.nModels.pages import PageFactory, SimplePage
-    from src.notion_lib.nModels.blocks.paragraph import ParagraphBlock
-    from src.notion_lib.nTypes.icons import NEmoji
+    from notion_lib.nModels.pages import PageFactory, SimplePage
+    from notion_lib.nModels.blocks.paragraph import ParagraphBlock
+    from notion_lib.nTypes.icons import NEmoji
 
     api = NotionApiClient(key=API_KEY)
 
@@ -611,7 +611,7 @@ def example_simple_page():
 
 def example_database_page():
     sep("12. Pages — DatabasePage")
-    from src.notion_lib.nModels.pages import PageFactory, DatabasePage
+    from notion_lib.nModels.pages import PageFactory, DatabasePage
 
     api = NotionApiClient(key=API_KEY)
 
@@ -644,7 +644,7 @@ def example_database_page():
     print("DatabasePage aggiornata ✓")
 
     # Crea una nuova entry nel database
-    from src.notion_lib.nEndpoints.databases import get_db_datasources
+    from notion_lib.nEndpoints.databases import get_db_datasources
     ds_list = get_db_datasources(api.headers, DB_URL)
     if ds_list:
         ds_id = ds_list[0]["id"]
@@ -664,7 +664,7 @@ def example_database_page():
 
 def example_page_factory_routing():
     sep("13. Pages — PageFactory routing")
-    from src.notion_lib.nModels.pages import PageFactory
+    from notion_lib.nModels.pages import PageFactory
 
     api = NotionApiClient(key=API_KEY)
 
@@ -687,7 +687,7 @@ def example_page_factory_routing():
 
 def example_database():
     sep("14. Databases — NDatabase")
-    from src.notion_lib.nModels.databases import DatabaseFactory, NDatabase
+    from notion_lib.nModels.databases import DatabaseFactory, NDatabase
 
     api = NotionApiClient(key=API_KEY)
 
@@ -738,9 +738,9 @@ def example_database():
 
 def example_datasource():
     sep("15. DataSources — NDataSource")
-    from src.notion_lib.nModels.datasources import DataSourceFactory
-    from src.notion_lib.nEndpoints.databases import get_db_datasources
-    from src.notion_lib.nTypes.ds_filters import F, S
+    from notion_lib.nModels.datasources import DataSourceFactory
+    from notion_lib.nEndpoints.databases import get_db_datasources
+    from notion_lib.nTypes.ds_filters import F, S
 
     api = NotionApiClient(key=API_KEY)
 
@@ -843,8 +843,8 @@ def example_datasource():
 
 def example_users():
     sep("16. Users — UserFactory")
-    from src.notion_lib.nModels.user import UserFactory, NPerson, NBot, NBotWorkspace
-    from src.notion_lib.nEndpoints.users import get_all_users
+    from notion_lib.nModels.user import UserFactory, NPerson, NBot, NBotWorkspace
+    from notion_lib.nEndpoints.users import get_all_users
 
     api = NotionApiClient(key=API_KEY)
 
@@ -879,7 +879,7 @@ def example_users():
 
 def example_filters():
     sep("17. Filters — F")
-    from src.notion_lib.nTypes.ds_filters import F
+    from notion_lib.nTypes.ds_filters import F
 
     examples = {
         "checkbox equals":           F.checkbox("Done").equals(True),
@@ -935,7 +935,7 @@ def example_filters():
 
 def example_sorts():
     sep("18. Sorts — S")
-    from src.notion_lib.nTypes.ds_filters import S
+    from notion_lib.nTypes.ds_filters import S
 
     # Sort singolo ascending
     s1 = S().get(("Name", True))
@@ -968,7 +968,7 @@ def example_sorts():
 
 def example_search():
     sep("19. Search")
-    from src.notion_lib.nEndpoints.searches import search_by_title
+    from notion_lib.nEndpoints.searches import search_by_title
 
     api = NotionApiClient(key=API_KEY)
 
@@ -995,7 +995,7 @@ def example_search():
 
 def example_comments():
     sep("20. Comments")
-    from src.notion_lib.nEndpoints.comments import create_comment, get_all_comments, get_comment
+    from notion_lib.nEndpoints.comments import create_comment, get_all_comments, get_comment
 
     api = NotionApiClient(key=API_KEY)
 

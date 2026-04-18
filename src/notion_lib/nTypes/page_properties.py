@@ -2,8 +2,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from src.notion_lib.nTypes.rich_text import NRichList, simple_rich_text_list, create_rich_list
-from src.notion_lib.nTypes.primitives import NDate
+from notion_lib.nTypes.rich_text import NRichList, simple_rich_text_list, create_rich_list
+from notion_lib.nTypes.primitives import NDate
 
 
 # ──────────────────────────────────────────────

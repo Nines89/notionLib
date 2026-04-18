@@ -1,10 +1,10 @@
 # notion_lib/nModels/blocks/meeting_notes.py
 from enum import Enum
 
-from src.notion_lib.nModels.blocks.base_block import register_block, BlockImpl
-from src.notion_lib.nTypes import NRichList
-from src.notion_lib.nTypes.rich_text import create_rich_list
-from src.notion_lib.nTypes.primitives import NDate
+from notion_lib.nModels.blocks.base_block import register_block, BlockImpl
+from notion_lib.nTypes import NRichList
+from notion_lib.nTypes.rich_text import create_rich_list
+from notion_lib.nTypes.primitives import NDate
 
 
 class MeetingNotesStatus(Enum):
@@ -124,21 +124,21 @@ class MeetingNotesBlock(BlockImpl):
         """Recupera il blocco summary. None se non disponibile."""
         if not self._summary_block_id:
             return None
-        from src.notion_lib.nModels.blocks.base_block import NFactory
+        from notion_lib.nModels.blocks.base_block import NFactory
         return NFactory.find(self.headers, self._summary_block_id)
 
     def get_notes(self):
         """Recupera il blocco notes. None se non disponibile."""
         if not self._notes_block_id:
             return None
-        from src.notion_lib.nModels.blocks.base_block import NFactory
+        from notion_lib.nModels.blocks.base_block import NFactory
         return NFactory.find(self.headers, self._notes_block_id)
 
     def get_transcript(self):
         """Recupera il blocco transcript. None se non disponibile."""
         if not self._transcript_block_id:
             return None
-        from src.notion_lib.nModels.blocks.base_block import NFactory
+        from notion_lib.nModels.blocks.base_block import NFactory
         return NFactory.find(self.headers, self._transcript_block_id)
 
     def __repr__(self):
@@ -155,8 +155,8 @@ if __name__ == "__main__":
     import os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
 
-    from src.notion_lib.client.auth import NotionApiClient
-    from src.notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.client.auth import NotionApiClient
+    from notion_lib.nModels.blocks.base_block import NFactory
 
     api = NotionApiClient(key="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")
 

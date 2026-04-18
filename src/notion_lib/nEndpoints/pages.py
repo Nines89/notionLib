@@ -1,12 +1,12 @@
-from src.notion_lib.client.https import NGET, NPATCH, NPOST
-from src.notion_lib.utils.utils import check_url_or_id
+from notion_lib.client.https import NGET, NPATCH, NPOST
+from notion_lib.utils.utils import check_url_or_id
 
 try:
     from mixed import find_parent_type
 except ModuleNotFoundError:
-    from src.notion_lib.nEndpoints.mixed import find_parent_type
+    from notion_lib.nEndpoints.mixed import find_parent_type
 
-from src.notion_lib.utils.constants import ParentTypes
+from notion_lib.utils.constants import ParentTypes
 
 BASE = "https://api.notion.com/v1/pages"
 CHILDREN = "https://api.notion.com/v1/blocks"
@@ -116,7 +116,7 @@ def restore_page(headers, page_id):
 
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
+    from notion_lib.client.auth import NotionApiClient
 
     api = NotionApiClient(key="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")
     pg_id = "2a7b7a8f729480b3b420f8736c4116d7"

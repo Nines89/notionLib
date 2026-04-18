@@ -1,4 +1,4 @@
-from src.notion_lib.client.errors import ValidationError, ObjectNotFound
+from notion_lib.client.errors import ValidationError, ObjectNotFound
 
 
 # Ordine di lookup ottimizzato: page prima (caso più comune), poi data_source,
@@ -16,10 +16,10 @@ def find_parent_type(headers: dict, _id: str) -> str:
     Nota: questa funzione esegue fino a 4 chiamate HTTP in cascata.
     Usarla con parsimonia; preferire il tipo esplicito dove noto.
     """
-    from src.notion_lib.nEndpoints.pages import get_page
-    from src.notion_lib.nEndpoints.databases import get_db
-    from src.notion_lib.nEndpoints.blocks import get_block
-    from src.notion_lib.nEndpoints.datasources import get_ds
+    from notion_lib.nEndpoints.pages import get_page
+    from notion_lib.nEndpoints.databases import get_db
+    from notion_lib.nEndpoints.blocks import get_block
+    from notion_lib.nEndpoints.datasources import get_ds
 
     lookups = {
         "page":        get_page,
@@ -51,7 +51,7 @@ def is_there_more(response: dict) -> bool:
 
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
+    from notion_lib.client.auth import NotionApiClient
 
     api = NotionApiClient(key="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")
 

@@ -1,7 +1,7 @@
-from src.notion_lib.nModels.blocks.base_block import register_block, BlockImpl
-from src.notion_lib.nTypes import NRichList, FileTypeExternal, FileTypeFile, FileTypeUploaded, n_file
-from src.notion_lib.nTypes.files import BaseFile
-from src.notion_lib.nTypes.rich_text import simple_rich_text_list, create_rich_list
+from notion_lib.nModels.blocks.base_block import register_block, BlockImpl
+from notion_lib.nTypes import NRichList, FileTypeExternal, FileTypeFile, FileTypeUploaded, n_file
+from notion_lib.nTypes.files import BaseFile
+from notion_lib.nTypes.rich_text import simple_rich_text_list, create_rich_list
 
 
 def _resolve_file(file_object):
@@ -92,7 +92,7 @@ class Video(BlockImpl):
     @classmethod
     def create(cls, url: str, caption: str = ""):
         """Crea un blocco video con URL esterno (es. YouTube)."""
-        from src.notion_lib.nTypes.files import FileTypeExternal
+        from notion_lib.nTypes.files import FileTypeExternal
         fo = FileTypeExternal(url)
         return cls(
             headers=None,

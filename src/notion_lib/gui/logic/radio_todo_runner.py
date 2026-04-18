@@ -17,7 +17,7 @@ def _extract_title(entry: dict) -> str:
 
 def list_entries(api, ds_id: str) -> list[dict]:
     """Restituisce le entry del datasource in formato adatto alla UI."""
-    from src.notion_lib.nModels.datasources import DataSourceFactory
+    notion_lib.nModels.datasources import DataSourceFactory
 
     ds = DataSourceFactory.find(api.headers, ds_id)
     rows = []
@@ -35,8 +35,8 @@ def run_radio_todo(api, ds_id: str, todo_prop: str, selected_entry_id: str) -> l
     Imposta la checkbox `todo_prop` a True solo sull'entry selezionata,
     e a False su tutte le altre entry del datasource.
     """
-    from src.notion_lib.nModels.datasources import DataSourceFactory
-    from src.notion_lib.nEndpoints.pages import update_page
+    notion_lib.nModels.datasources import DataSourceFactory
+    notion_lib.nEndpoints.pages import update_page
 
     target_id = (selected_entry_id or "").replace("-", "")
     if not target_id:

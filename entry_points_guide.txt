@@ -1,0 +1,69 @@
+# Come aggiungere nuovi entry point al pacchetto
+
+## Cos'è un entry point
+
+Un entry point è un comando che diventa disponibile da terminale
+dopo aver installato il pacchetto con pip.
+
+Esempio: dopo aver dichiarato "notion-gui", l'utente può scrivere
+"notion-gui" da qualsiasi terminale e la GUI si avvia.
+
+
+## Struttura richiesta nel codice
+
+Ogni entry point deve puntare a una funzione "main()" in un file Python.
+
+Esempio — se vuoi aggiungere "notion-sync":
+
+1. Crea il file:
+   src/notion_lib/automazioni/sync.py
+
+2. Il file deve contenere una funzione main():
+
+   def main():
+       # logica dell'automazione
+       pass
+
+   if __name__ == "__main__":
+       main()
+
+
+## Come dichiararlo in pyproject.toml
+
+Apri pyproject.toml e aggiungi una riga sotto [project.scripts]:
+
+   [project.scripts]
+   notion-gui    = "notion_lib.notion_gui:main"
+   notion-sync   = "notion_lib.automazioni.sync:main"
+   notion-export = "notion_lib.automazioni.export:main"
+
+Il formato è sempre:
+   nome-comando = "percorso.modulo:funzione"
+
+
+## Come rendere disponibile il nuovo comando
+
+Ogni volta che modifichi pyproject.toml devi reinstallare il pacchetto:
+
+   pip install -e .
+
+Da quel momento il nuovo comando e' disponibile da terminale.
+
+
+## Esempi pratici
+
+| Comando terminale  | File                                      | Funzione |
+|--------------------|-------------------------------------------|----------|
+| notion-gui         | src/notion_lib/notion_gui.py              | main()   |
+| notion-sync        | src/notion_lib/automazioni/sync.py        | main()   |
+| notion-export      | src/notion_lib/automazioni/export.py      | main()   |
+| notion-report      | src/notion_lib/automazioni/report.py      | main()   |
+
+
+## Note
+
+- Il nome del comando (es. notion-sync) puo' essere qualsiasi stringa
+- Usa il trattino "-" nel nome comando, non underscore (convenzione pip)
+- Usa underscore "_" nei nomi dei moduli Python (es. notion_gui.py)
+- Se dimentichi di reinstallare con "pip install -e ." il nuovo
+  comando non sara' disponibile anche se il codice e' corretto

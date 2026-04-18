@@ -6,9 +6,9 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import pyqtSignal
 
 # Mantengo i tuoi import originali
-from src.notion_lib.gui.widgets.filter_editor import FilterEditor
-from src.notion_lib.gui.widgets.sort_editor import SortEditor
-from src.notion_lib.gui.widgets.mapping_editor import MappingEditor
+from notion_lib.gui.widgets.filter_editor import FilterEditor
+from notion_lib.gui.widgets.sort_editor import SortEditor
+from notion_lib.gui.widgets.mapping_editor import MappingEditor
 
 # --- STILE QSS ---
 from .styles import STYLESHEET, _SectionCard, cp_ds_sections

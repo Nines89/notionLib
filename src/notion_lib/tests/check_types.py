@@ -1,8 +1,8 @@
 import sys
 sys.path.insert(0, "")
 
-from src.notion_lib.client.auth import NotionApiClient
-from src.notion_lib.nEndpoints.blocks import get_block_children
+from notion_lib.client.auth import NotionApiClient
+from notion_lib.nEndpoints.blocks import get_block_children
 
 API_KEY = "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"
 BLK_MEETING = "325b7a8f72948037bc72dfd0a8726941"
@@ -10,7 +10,7 @@ BLK_MEETING = "325b7a8f72948037bc72dfd0a8726941"
 api = NotionApiClient(key=API_KEY)
 
 # Leggi il blocco meeting_notes grezzo
-from src.notion_lib.nEndpoints.blocks import get_block
+from notion_lib.nEndpoints.blocks import get_block
 raw = get_block(api.headers, BLK_MEETING)
 meeting_data = raw.response
 block_type = meeting_data["type"]

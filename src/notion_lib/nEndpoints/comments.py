@@ -1,7 +1,7 @@
-from src.notion_lib.client.https import NGET, NPOST
-from src.notion_lib.nEndpoints.mixed import find_parent_type
-from src.notion_lib.nTypes.rich_text import simple_rich_text_list
-from src.notion_lib.utils.utils import check_url_or_id
+from notion_lib.client.https import NGET, NPOST
+from notion_lib.nEndpoints.mixed import find_parent_type
+from notion_lib.nTypes.rich_text import simple_rich_text_list
+from notion_lib.utils.utils import check_url_or_id
 
 BASE = "https://api.notion.com/v1/comments"
 
@@ -39,7 +39,7 @@ def create_comment(headers,
 
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
+    from notion_lib.client.auth import NotionApiClient
     api = NotionApiClient(key="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")
     blk_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f729481f2a917e1c673fb8cf4"
     #################### CREATE COMMENT EXAMPLE ######################################

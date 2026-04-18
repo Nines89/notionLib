@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import Optional
 
-from src.notion_lib.nModels.base_object import ObjInterface
-from src.notion_lib.nEndpoints import users as user_endpoint
-from src.notion_lib.utils.utils import resolve_response
+from notion_lib.nModels.base_object import ObjInterface
+from notion_lib.nEndpoints import users as user_endpoint
+from notion_lib.utils.utils import resolve_response
 
 
 class UserError(Exception):
@@ -143,7 +143,7 @@ class UserFactory:
         return u
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
+    from notion_lib.client.auth import NotionApiClient
 
     api = NotionApiClient(key="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")
     blockId = "8711f079-8ae4-4748-89a7-d2daf31ff8fe"

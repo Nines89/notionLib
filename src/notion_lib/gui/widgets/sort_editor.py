@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import pyqtSignal, Qt
 
-from src.notion_lib.gui.state import SortRow
+from notion_lib.gui.state import SortRow
 
 
 class SortRowWidget(QWidget):

@@ -1,8 +1,8 @@
-from src.notion_lib.client.https import NGET, NPATCH, NPOST
-from src.notion_lib.nEndpoints.mixed import find_parent_type
-from src.notion_lib.nTypes.rich_text import simple_rich_text_list
-from src.notion_lib.utils.constants import DbFieldType
-from src.notion_lib.utils.utils import check_url_or_id
+from notion_lib.client.https import NGET, NPATCH, NPOST
+from notion_lib.nEndpoints.mixed import find_parent_type
+from notion_lib.nTypes.rich_text import simple_rich_text_list
+from notion_lib.utils.constants import DbFieldType
+from notion_lib.utils.utils import check_url_or_id
 
 BASE = "https://api.notion.com/v1/data_sources"
 
@@ -177,7 +177,7 @@ def sort_a_ds(headers, ds_id, sorties: dict):
 
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
+    from notion_lib.client.auth import NotionApiClient
     from databases import get_db_datasources
 
     api = NotionApiClient(key="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")
@@ -239,7 +239,7 @@ if __name__ == "__main__":
     # res_and_or_f = filter_a_ds(api.headers, ds_id_, and_or_f)
     # print(len(res_and_or_f['results']))
     #################### SORT DS EXAMPLE ######################################
-    from src.notion_lib.nTypes.ds_filters import S
+    from notion_lib.nTypes.ds_filters import S
 
     db_id_ = "https://www.notion.so/2c0b7a8f72948024a529f2a82e767024?v=2c0b7a8f72948174811f000c8c4bab20&source=copy_link"
     ds_id_ = get_db_datasources(api.headers, db_id_)[1]['id']

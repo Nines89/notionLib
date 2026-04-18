@@ -1,7 +1,7 @@
-from src.notion_lib.nModels.blocks.base_block import register_block, BlockImpl
-from src.notion_lib.nTypes import NRichList
-from src.notion_lib.nTypes.rich_text import simple_rich_text_list, create_rich_list
-from src.notion_lib.utils.constants import NColors
+from notion_lib.nModels.blocks.base_block import register_block, BlockImpl
+from notion_lib.nTypes import NRichList
+from notion_lib.nTypes.rich_text import simple_rich_text_list, create_rich_list
+from notion_lib.utils.constants import NColors
 
 
 @register_block("paragraph")
@@ -61,8 +61,8 @@ class ParagraphBlock(BlockImpl):
 
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
-    from src.notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.client.auth import NotionApiClient
+    from notion_lib.nModels.blocks.base_block import NFactory
 
     api = NotionApiClient(key="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")
     obj_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f729481078b12e5862da8ce76"

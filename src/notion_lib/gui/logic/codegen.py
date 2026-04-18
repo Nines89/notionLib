@@ -8,7 +8,7 @@ import re
 import sys
 sys.path.insert(0, "")
 
-from src.notion_lib.gui.constants import NO_VALUE_OPS
+from notion_lib.gui.constants import NO_VALUE_OPS
 
 
 # ── Helper: factory method Notion per tipo colonna ────────────────────────────

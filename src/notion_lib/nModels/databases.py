@@ -1,16 +1,16 @@
 from __future__ import annotations
 from typing import Optional
 
-from src.notion_lib.nModels.base_object import NObj
-from src.notion_lib.nEndpoints.databases import (
+from notion_lib.nModels.base_object import NObj
+from notion_lib.nEndpoints.databases import (
     get_db,
     get_db_datasources,
     create_db,
     update_db,
     move_db,
 )
-from src.notion_lib.nTypes.rich_text import simple_rich_text_list
-from src.notion_lib.utils.utils import check_url_or_id, resolve_response
+from notion_lib.nTypes.rich_text import simple_rich_text_list
+from notion_lib.utils.utils import check_url_or_id, resolve_response
 
 
 class DatabaseError(Exception):
@@ -74,7 +74,7 @@ class NDatabase(NObj):
     @property
     def datasources(self) -> list:
         self._ensure_data()
-        from src.notion_lib.nModels.datasources import NDataSource
+        from notion_lib.nModels.datasources import NDataSource
         return [NDataSource(self.headers, ds["id"]) for ds in self._raw_datasources]
 
     def to_payload(self) -> dict:
@@ -112,8 +112,8 @@ class NDatabase(NObj):
         return result
 
     def create_datasource(self, title: str, prop_schema: dict = None):
-        from src.notion_lib.nEndpoints.datasources import create_ds
-        from src.notion_lib.nModels.datasources import NDataSource
+        from notion_lib.nEndpoints.datasources import create_ds
+        from notion_lib.nModels.datasources import NDataSource
         data = create_ds(self.headers, title=title, parent_id=self.obj_id, prop_schema=prop_schema)
         ds = NDataSource(self.headers, resolve_response(data)["id"])
         ds._apply(data)
@@ -149,7 +149,7 @@ class DatabaseFactory:
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
+    from notion_lib.client.auth import NotionApiClient
 
     api = NotionApiClient(key="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")
 

@@ -10,8 +10,8 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import pyqtSignal, Qt
 
-from src.notion_lib.gui.constants import FILTER_OPS, FILTER_OPS_DEFAULT, NO_VALUE_OPS
-from src.notion_lib.gui.state import FilterRow
+from notion_lib.gui.constants import FILTER_OPS, FILTER_OPS_DEFAULT, NO_VALUE_OPS
+from notion_lib.gui.state import FilterRow
 
 
 class FilterRowWidget(QWidget):

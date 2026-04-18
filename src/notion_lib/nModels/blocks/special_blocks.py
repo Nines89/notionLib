@@ -1,7 +1,7 @@
-from src.notion_lib.nModels.blocks.base_block import register_block, BlockImpl
-from src.notion_lib.nTypes import NRichList, IconFactory, NEmoji
-from src.notion_lib.nTypes.rich_text import simple_rich_text_list, create_rich_list
-from src.notion_lib.utils.constants import NColors, NLanguage
+from notion_lib.nModels.blocks.base_block import register_block, BlockImpl
+from notion_lib.nTypes import NRichList, IconFactory, NEmoji
+from notion_lib.nTypes.rich_text import simple_rich_text_list, create_rich_list
+from notion_lib.utils.constants import NColors, NLanguage
 
 
 @register_block("callout")
@@ -184,8 +184,8 @@ class ChildPageBlock(BlockImpl):
         return cls(headers=None, title=title)
 
     def update(self):
-        from src.notion_lib.nEndpoints.pages import update_page
-        from src.notion_lib.nTypes.rich_text import simple_rich_text_list
+        from notion_lib.nEndpoints.pages import update_page
+        from notion_lib.nTypes.rich_text import simple_rich_text_list
         return update_page(self.headers, self.block_id, {
             "properties": {"title": simple_rich_text_list(self._title).to_dict()}
         })
@@ -224,7 +224,7 @@ class ChildDatabaseBlock(BlockImpl):
         return {"child_database": {"title": self._title}}
 
     def update(self):
-        from src.notion_lib.nEndpoints.databases import update_db
+        from notion_lib.nEndpoints.databases import update_db
         return update_db(self.headers, self.block_id, title=self._title)
 
     @property
@@ -410,7 +410,7 @@ class ColumnBlock(BlockImpl):
         return cls(headers=None, ratio=ratio)
 
     def to_payload(self):
-        from src.notion_lib.nModels.blocks.paragraph import ParagraphBlock
+        from notion_lib.nModels.blocks.paragraph import ParagraphBlock
         dummy = ParagraphBlock.create("dummy text for column")
         payload = {"column": {
             "children": [dummy.to_payload()] + [ch.to_payload() for ch in self.children]
@@ -575,10 +575,10 @@ class LinkPreviewBlock(BlockImpl):
 
 
 if __name__ == "__main__":
-    import sys
+    import sys, os
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
-    from src.notion_lib.client.auth import NotionApiClient
-    from src.notion_lib.nModels.blocks.base_block import NFactory
+    from notion_lib.client.auth import NotionApiClient
+    from notion_lib.nModels.blocks.base_block import NFactory
 
     api = NotionApiClient(key="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")
 

@@ -1,4 +1,4 @@
-from src.notion_lib.nTypes import n_file
+from notion_lib.nTypes import n_file
 
 
 class EmojiError(Exception):

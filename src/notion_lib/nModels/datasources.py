@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import Optional
 
-from src.notion_lib.nModels.base_object import NObj
-from src.notion_lib.nEndpoints.datasources import (
+from notion_lib.nModels.base_object import NObj
+from notion_lib.nEndpoints.datasources import (
     get_ds,
     get_ds_templates,
     create_ds,
@@ -13,8 +13,8 @@ from src.notion_lib.nEndpoints.datasources import (
     remove_ds_property,
     rename_ds_property,
 )
-from src.notion_lib.nTypes.rich_text import simple_rich_text_list
-from src.notion_lib.utils.utils import check_url_or_id, resolve_response
+from notion_lib.nTypes.rich_text import simple_rich_text_list
+from notion_lib.utils.utils import check_url_or_id, resolve_response
 
 
 class DataSourceTemplate:
@@ -176,8 +176,8 @@ class NDataSource(NObj):
         return result
 
     def create_entry(self, properties: dict, template_id=None, icon=None, cover=None):
-        from src.notion_lib.nModels.pages import DatabasePage
-        from src.notion_lib.client.https import NPOST
+        from notion_lib.nModels.pages import DatabasePage
+        from notion_lib.client.https import NPOST
 
         ds_id = check_url_or_id(self.obj_id)
         if hasattr(template_id, "id"):
@@ -227,15 +227,15 @@ class DataSourceFactory:
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":
-    from src.notion_lib.client.auth import NotionApiClient
-    from src.notion_lib.nTypes.ds_filters import F, S
+    from notion_lib.client.auth import NotionApiClient
+    from notion_lib.nTypes.ds_filters import F, S
 
     api = NotionApiClient(key="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")
 
     db_url = "https://www.notion.so/2a7b7a8f729481919ac9c1853a813571?v=2a7b7a8f7294819bb426000cf2da4ff8&source=copy_link"
 
     # ── Carica DB e recupera DS tramite NDatabase ──
-    from src.notion_lib.nModels.databases import DatabaseFactory
+    from notion_lib.nModels.databases import DatabaseFactory
     db = DatabaseFactory.find(api.headers, db_url)
     print(db)
 

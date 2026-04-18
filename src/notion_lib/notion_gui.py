@@ -9,8 +9,8 @@ sys.path.insert(0, "../..")
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 
-from gui.style import apply as apply_style
-from gui.app import MainWindow
+from .gui.style import apply as apply_style
+from .gui.app import MainWindow
 
 
 def main():

@@ -1,5 +1,5 @@
-from src.notion_lib.nModels.base_object import NObj, NObjDB, NObjDS, NObjPage
-from src.notion_lib.nModels.blocks.base_block import NObjBlock
+from notion_lib.nModels.base_object import NObj, NObjDB, NObjDS, NObjPage
+from notion_lib.nModels.blocks.base_block import NObjBlock
 
 class ParentError(Exception):
     pass

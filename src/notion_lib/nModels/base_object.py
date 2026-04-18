@@ -76,7 +76,7 @@ class NObj(ObjInterface):
     def create_info(self):
         self._ensure_data()
         from user import UserFactory
-        from src.notion_lib.nTypes.primitives import NDate
+        from notion_lib.nTypes.primitives import NDate
         return {
             'last_edited_time': NDate(self._data['last_edited_time']),
             'create_user': UserFactory.create(self.headers, self._data['last_edited_by']['id'])
@@ -86,7 +86,7 @@ class NObj(ObjInterface):
     def last_edit_info(self):
         self._ensure_data()
         from user import UserFactory
-        from src.notion_lib.nTypes.primitives import NDate
+        from notion_lib.nTypes.primitives import NDate
         return {
             'last_edited_time': NDate(self._data['last_edited_time']),
             'create_user': UserFactory.create(self.headers, self._data['last_edited_by']['id'])
@@ -113,8 +113,8 @@ class NObjPage(NObj):
 import time
 from abc import ABC, abstractmethod
 
-from src.notion_lib.nEndpoints.datasources import get_ds
-from src.notion_lib.utils.utils import resolve_response
+from notion_lib.nEndpoints.datasources import get_ds
+from notion_lib.utils.utils import resolve_response
 
 
 class ObjInterface(ABC):
@@ -189,8 +189,8 @@ class NObj(ObjInterface):
     @property
     def create_info(self):
         self._ensure_data()
-        from src.notion_lib.nModels.user import UserFactory
-        from src.notion_lib.nTypes.primitives import NDate
+        from notion_lib.nModels.user import UserFactory
+        from notion_lib.nTypes.primitives import NDate
         raw = resolve_response(self._data)
         return {
             'created_time': NDate(raw['created_time']),
@@ -200,8 +200,8 @@ class NObj(ObjInterface):
     @property
     def last_edit_info(self):
         self._ensure_data()
-        from src.notion_lib.nModels.user import UserFactory
-        from src.notion_lib.nTypes.primitives import NDate
+        from notion_lib.nModels.user import UserFactory
+        from notion_lib.nTypes.primitives import NDate
         raw = resolve_response(self._data)
         return {
             'last_edited_time': NDate(raw['last_edited_time']),
@@ -243,14 +243,14 @@ class NObjDB(NObj):
     @property
     def create_info(self):
         self._ensure_data()
-        from src.notion_lib.nTypes.primitives import NDate
+        from notion_lib.nTypes.primitives import NDate
         raw = resolve_response(self._data)
         return {'created_time': NDate(raw['created_time'])}
 
     @property
     def last_edit_info(self):
         self._ensure_data()
-        from src.notion_lib.nTypes.primitives import NDate
+        from notion_lib.nTypes.primitives import NDate
         raw = resolve_response(self._data)
         return {'last_edited_time': NDate(raw['last_edited_time'])}
 
@@ -267,11 +267,11 @@ class NObjDS(NObj):
 
 if __name__ == '__main__':
     start = time.time()
-    from src.notion_lib.client.auth import NotionApiClient
-    from src.notion_lib.nEndpoints.pages import get_page
-    from src.notion_lib.nEndpoints.databases import get_db
+    from notion_lib.client.auth import NotionApiClient
+    from notion_lib.nEndpoints.pages import get_page
+    from notion_lib.nEndpoints.databases import get_db
 
-    from src.notion_lib.nModels.blocks.base_block import NObjBlock
+    from notion_lib.nModels.blocks.base_block import NObjBlock
 
     api = NotionApiClient(key="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")
     pg_id = "2a7b7a8f729480b3b420f8736c4116d7"
