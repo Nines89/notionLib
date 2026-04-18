@@ -44,6 +44,25 @@ class LoadSchemaWorker(QThread):
             self.failure.emit(self._ds_id, str(e))
 
 
+class LoadEntriesWorker(QThread):
+    """Carica le entry di un datasource per selezione in UI."""
+    success = pyqtSignal(str, list)   # ds_id, entries
+    failure = pyqtSignal(str, str)    # ds_id, errore
+
+    def __init__(self, api, ds_id: str):
+        super().__init__()
+        self._api = api
+        self._ds_id = ds_id
+
+    def run(self):
+        try:
+            from gui.logic.radio_todo_runner import list_entries
+            entries = list_entries(self._api, self._ds_id)
+            self.success.emit(self._ds_id, entries)
+        except Exception as e:
+            self.failure.emit(self._ds_id, str(e))
+
+
 class RunWorker(QThread):
     """Esegue l'automazione (lettura, filtro, ordinamento, scrittura)."""
     success = pyqtSignal(list)   # righe di log
@@ -244,6 +263,30 @@ class CreateRepeatedBlocksWorker(QThread):
                 log.append(f"✓ Creata pagina {title} ({len(blocks)} blocchi)")
 
             log.append(f"✓ Completato: create {len(titles)} pagine.")
+            self.success.emit(log)
+        except Exception as e:
+            self.failure.emit(str(e))
+
+
+class RunRadioTodoWorker(QThread):
+    """Esegue l'automazione radio-button su una proprietà checkbox."""
+    success = pyqtSignal(list)
+    failure = pyqtSignal(str)
+
+    def __init__(self, api, cfg: dict):
+        super().__init__()
+        self._api = api
+        self._cfg = cfg
+
+    def run(self):
+        try:
+            from gui.logic.radio_todo_runner import run_radio_todo
+            log = run_radio_todo(
+                api=self._api,
+                ds_id=self._cfg["ds_id"],
+                todo_prop=self._cfg["todo_prop"],
+                selected_entry_id=self._cfg["entry_id"],
+            )
             self.success.emit(log)
         except Exception as e:
             self.failure.emit(str(e))

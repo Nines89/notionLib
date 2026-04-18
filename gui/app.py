@@ -11,7 +11,10 @@ from PyQt6.QtWidgets import (
 )
 
 from gui.state import get_state, reset_state
-from gui.workers import ConnectWorker, LoadSchemaWorker, RunWorker, CreateRepeatedBlocksWorker
+from gui.workers import (
+    ConnectWorker, LoadSchemaWorker, LoadEntriesWorker,
+    RunWorker, CreateRepeatedBlocksWorker, RunRadioTodoWorker,
+)
 from gui.logic.codegen import generate
 
 from gui.widgets.sidebar       import SidebarWidget
@@ -19,6 +22,7 @@ from gui.widgets.workspace_tab import WorkspaceTab
 from gui.widgets.automations_tab import AutomationsTab
 from gui.widgets.automation_tools.copy_datasource import CopyDatasourceTool
 from gui.widgets.automation_tools.repeated_blocks import RepeatedBlocksTool
+from gui.widgets.automation_tools.radio_todo import RadioTodoTool
 
 
 class MainWindow(QMainWindow):
@@ -94,6 +98,16 @@ class MainWindow(QMainWindow):
             tool_widget=self._repeat_tool,
         )
 
+        self._radio_todo_tool = RadioTodoTool()
+        self._auto_tab.register_tool(
+            icon="☑️",
+            title="Radio To-Do",
+            description="Scegli una sola entry da mantenere checkata in una proprietà To-Do, deselezionando automaticamente tutte le altre.",
+            gradient_start="#0F766E",
+            gradient_end="#14B8A6",
+            tool_widget=self._radio_todo_tool,
+        )
+
         content_lay.addWidget(self._tabs)
         root.addWidget(content, stretch=1)
 
@@ -104,6 +118,9 @@ class MainWindow(QMainWindow):
         self._repeat_tool.schema_needed.connect(self._on_schema_needed)
         self._repeat_tool.generate_requested.connect(self._on_repeat_generate)
         self._repeat_tool.run_requested.connect(self._on_repeat_run)
+        self._radio_todo_tool.schema_needed.connect(self._on_schema_needed)
+        self._radio_todo_tool.entries_needed.connect(self._on_entries_needed)
+        self._radio_todo_tool.run_requested.connect(self._on_radio_todo_run)
 
         # ── Status bar ────────────────────────────────────────────
         self._status = QStatusBar()
@@ -136,6 +153,7 @@ class MainWindow(QMainWindow):
         self._ws_tab.refresh(databases, datasources, pages)
         self._copy_tool.populate_datasources(datasources)
         self._repeat_tool.populate_datasources(datasources)
+        self._radio_todo_tool.populate_datasources(datasources)
         self._tabs.setEnabled(True)
         self._status.showMessage(
             f"Connesso come {bot_name}  ·  "
@@ -171,6 +189,7 @@ class MainWindow(QMainWindow):
             # Schema già in cache: aggiorna subito i tool
             self._copy_tool.update_schema(ds_id, state.ds_schemas[ds_id])
             self._repeat_tool.update_schema(ds_id, state.ds_schemas[ds_id])
+            self._radio_todo_tool.update_schema(ds_id, state.ds_schemas[ds_id])
             return
         w = LoadSchemaWorker(api, ds_id)
         w.success.connect(self._on_schema_ok)
@@ -184,10 +203,30 @@ class MainWindow(QMainWindow):
         state.ds_schemas[ds_id] = schema
         self._copy_tool.update_schema(ds_id, schema)
         self._repeat_tool.update_schema(ds_id, schema)
+        self._radio_todo_tool.update_schema(ds_id, schema)
         self._status.showMessage("Schema caricato.")
 
     def _on_schema_fail(self, ds_id: str, error: str):
         self._status.showMessage(f"Errore caricamento schema: {error}")
+
+    def _on_entries_needed(self, ds_id: str):
+        state = get_state()
+        if not state.api or not ds_id:
+            return
+
+        w = LoadEntriesWorker(state.api, ds_id)
+        w.success.connect(self._on_entries_ok)
+        w.failure.connect(self._on_entries_fail)
+        w.finished.connect(lambda worker=w: self._cleanup_worker(worker))
+        self._workers.append(w)
+        w.start()
+
+    def _on_entries_ok(self, ds_id: str, entries: list):
+        self._radio_todo_tool.update_entries(ds_id, entries)
+        self._status.showMessage(f"Entry caricate: {len(entries)}")
+
+    def _on_entries_fail(self, ds_id: str, error: str):
+        self._status.showMessage(f"Errore caricamento entry: {error}")
 
     # ══════════════════════════════════════════════════════════════
     # CopyDatasource tool — genera e esegui
@@ -504,3 +543,32 @@ class MainWindow(QMainWindow):
         self._repeat_tool.set_running(False)
         self._repeat_tool.show_log([f"✗ Errore fatale: {error}"])
         self._status.showMessage("Creazione template fallita.")
+
+    # ══════════════════════════════════════════════════════════════
+    # Radio To-Do tool — esecuzione
+    # ══════════════════════════════════════════════════════════════
+
+    def _on_radio_todo_run(self, cfg: dict):
+        state = get_state()
+        if not state.api:
+            return
+
+        self._radio_todo_tool.set_running(True)
+        self._status.showMessage("Applicazione radio To-Do in corso…")
+
+        w = RunRadioTodoWorker(state.api, cfg)
+        w.success.connect(self._on_radio_todo_ok)
+        w.failure.connect(self._on_radio_todo_fail)
+        w.finished.connect(lambda worker=w: self._cleanup_worker(worker))
+        self._workers.append(w)
+        w.start()
+
+    def _on_radio_todo_ok(self, log: list):
+        self._radio_todo_tool.set_running(False)
+        self._radio_todo_tool.show_log(log)
+        self._status.showMessage("Radio To-Do applicato con successo.")
+
+    def _on_radio_todo_fail(self, error: str):
+        self._radio_todo_tool.set_running(False)
+        self._radio_todo_tool.show_log([f"✗ Errore fatale: {error}"])
+        self._status.showMessage("Applicazione radio To-Do fallita.")
