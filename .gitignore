@@ -12,3 +12,4 @@ gui/__pycache__
 gui/logic/__pycache__
 gui/widgets/__pycache__
 gui/widgets/automation_tools/__pycache__
+gui/dialogs/__pycache__
