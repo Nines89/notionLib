@@ -200,6 +200,29 @@ class _UpdateBlockWorker(QThread):
             self.failure.emit(str(e))
 
 
+class _AppendBlockWorker(QThread):
+    success = pyqtSignal(object)   # block appended
+    failure = pyqtSignal(str)
+
+    def __init__(self, headers: dict, page_id: str, block):
+        super().__init__()
+        self._headers = headers
+        self._page_id = page_id
+        self._block   = block
+
+    def run(self):
+        try:
+            from nEndpoints.blocks import append_children
+            append_children(
+                self._headers,
+                self._page_id,
+                [self._block.to_payload()]
+            )
+            self.success.emit(self._block)
+        except Exception as e:
+            self.failure.emit(str(e))
+
+
 # ─── Form per read-only ───────────────────────────────────────────
 
 class _ReadOnlyForm(QWidget):
@@ -738,6 +761,30 @@ class PageBlocksDialog(QDialog):
         self._list.setEnabled(False)
         self._list.currentRowChanged.connect(self._on_block_selected)
         ll.addWidget(self._list)
+
+        add_btn = QPushButton("＋  Aggiungi blocco")
+        add_btn.setEnabled(False)
+        add_btn.setFixedHeight(34)
+        add_btn.setStyleSheet("""
+            QPushButton {
+                background: #0D1628;
+                border: none;
+                border-top: 1px solid #1E293B;
+                color: #22D3EE;
+                font-size: 12px;
+                font-weight: 700;
+                letter-spacing: 0.4px;
+            }
+            QPushButton:hover:enabled {
+                background: #162033;
+                color: #38BDF8;
+            }
+            QPushButton:disabled { color: #1E3A5F; }
+        """)
+        add_btn.clicked.connect(self._on_add_block)
+        self._add_btn = add_btn
+        ll.addWidget(add_btn)
+
         splitter.addWidget(left)
 
         # ── Pannello destro: form editor ──────────────────────────
@@ -834,11 +881,11 @@ class PageBlocksDialog(QDialog):
         self._blocks = blocks
         self._progress.hide()
         self._list.setEnabled(True)
+        self._add_btn.setEnabled(True)
         count = len(blocks)
         self._status_lbl.setText(
             f"{count} {'blocco' if count == 1 else 'blocchi'}"
         )
-
         self._list.clear()
         for block in blocks:
             bt = _get_block_type(block)
@@ -849,6 +896,7 @@ class PageBlocksDialog(QDialog):
                 text += f"  —  {preview}"
             item = QListWidgetItem(text)
             self._list.addItem(item)
+
 
     def _on_load_error(self, error: str):
         self._progress.hide()
@@ -890,6 +938,48 @@ class PageBlocksDialog(QDialog):
             item = self._form_lay.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
+
+    def _on_add_block(self):
+        from gui.widgets.block_insert_dialog import InsertBlockDialog
+        dialog = InsertBlockDialog(self.windowTitle(), parent=self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        block = dialog.get_block()
+        if not block:
+            return
+
+        self._add_btn.setEnabled(False)
+        self._status_lbl.setText("Aggiunta blocco…")
+
+        w = _AppendBlockWorker(self._headers, self._page_id, block)
+        w.success.connect(self._on_append_ok)
+        w.failure.connect(self._on_append_error)
+        w.finished.connect(lambda worker=w: self._cleanup(worker))
+        self._workers.append(w)
+        w.start()
+
+    def _on_append_ok(self, block):
+        self._add_btn.setEnabled(True)
+        self._blocks.append(block)
+
+        bt = _get_block_type(block)
+        icon, label = BLOCK_META.get(bt, ("?", bt))
+        preview = _block_preview(block)
+        text = f"{icon}  {label}"
+        if preview:
+            text += f"  —  {preview}"
+
+        self._list.addItem(text)
+        self._list.setCurrentRow(self._list.count() - 1)  # seleziona il nuovo
+        self._status_lbl.setText(
+            f"{self._list.count()} {'blocco' if self._list.count() == 1 else 'blocchi'}"
+        )
+
+    def _on_append_error(self, error: str):
+        self._add_btn.setEnabled(True)
+        self._status_lbl.setText("⚠  Errore aggiunta")
+        QMessageBox.critical(self, "Errore", f"Impossibile aggiungere il blocco:\n{error}")
 
     # ── Salvataggio ───────────────────────────────────────────────
 
