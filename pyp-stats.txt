@@ -1,0 +1,202 @@
+# Struttura pacchetto pip — Riferimento personale
+
+---
+
+## Struttura del progetto
+
+```
+notion_lib/                      ← root del progetto
+├── pyproject.toml               ← configurazione pacchetto pip
+├── README.md
+├── requirements.txt
+└── src/
+    └── notion_lib/              ← codice sorgente del pacchetto
+        ├── __init__.py          ← export pubblici del pacchetto
+        ├── notion_gui.py        ← entry point GUI
+        ├── client/
+        ├── nModels/
+        ├── nTypes/
+        ├── nEndpoints/
+        ├── gui/
+        └── utils/
+```
+
+---
+
+## pyproject.toml
+
+```toml
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "notion-lib"
+version = "0.1.0"
+description = "Python library and GUI for the Notion API"
+requires-python = ">=3.10"
+dependencies = [
+    "PyQt6>=6.6.0",
+    "requests>=2.31.0",
+    "certifi>=2024.0.0",
+]
+
+[project.scripts]
+notion-gui = "notion_lib.notion_gui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+```
+
+### Note pyproject.toml
+- `dependencies` sostituisce `requirements.txt` per la distribuzione
+- `[project.scripts]` definisce i comandi da terminale
+- `where = ["src"]` dice a setuptools dove trovare il codice
+- ogni volta che modifichi `[project.scripts]` devi reinstallare con `pip install -e .`
+
+---
+
+## Installazione in modalità sviluppo
+
+Dalla root del progetto (dove si trova `pyproject.toml`):
+
+```bash
+pip install -e .
+```
+
+Il flag `-e` (editable) significa che il pacchetto punta direttamente
+ai file in src/ — ogni modifica al codice e' immediata senza reinstallare.
+
+Unica eccezione: se modifichi `[project.scripts]` in `pyproject.toml`
+devi sempre reinstallare.
+
+---
+
+## Come avviare la GUI
+
+```bash
+# metodo diretto (funziona sempre)
+python -m notion_lib.notion_gui
+
+# metodo entry point (richiede PATH configurato)
+notion-gui
+```
+
+### Problema PATH su Windows
+Se `notion-gui` non viene riconosciuto, aggiungi al PATH di Windows:
+
+    C:\Users\<utente>\AppData\Roaming\Python\Python312\Scripts
+
+oppure esegui `pip install -e .` da PowerShell come amministratore
+per installare in C:\Program Files\Python312\Scripts\ (gia' nel PATH).
+
+---
+
+## Come aggiungere un nuovo entry point
+
+### 1. Crea il file con la funzione main()
+
+```
+src/notion_lib/automazioni/sync.py
+```
+
+```python
+def main():
+    # logica
+    pass
+
+if __name__ == "__main__":
+    main()
+```
+
+### 2. Dichiaralo in pyproject.toml
+
+```toml
+[project.scripts]
+notion-gui    = "notion_lib.notion_gui:main"
+notion-sync   = "notion_lib.automazioni.sync:main"
+notion-export = "notion_lib.automazioni.export:main"
+```
+
+### 3. Reinstalla
+
+```bash
+pip install -e .
+```
+
+### Convenzioni nomi
+- nome comando (terminale): trattino  →  `notion-sync`
+- nome modulo Python: underscore      →  `sync.py`
+
+---
+
+## Come aggiungere una dipendenza
+
+1. Aggiungi in `pyproject.toml` sotto `dependencies`:
+```toml
+dependencies = [
+    "PyQt6>=6.6.0",
+    "requests>=2.31.0",
+    "certifi>=2024.0.0",
+    "nuova-libreria>=1.0.0",   # ← aggiungi qui
+]
+```
+
+2. Reinstalla:
+```bash
+pip install -e .
+```
+
+---
+
+## Regola sugli import
+
+Tutti gli import interni al pacchetto devono usare `notion_lib.` come prefisso:
+
+```python
+# CORRETTO
+from notion_lib.nModels.blocks.paragraph import ParagraphBlock
+from notion_lib.utils.constants import NColors
+
+# SBAGLIATO
+from nModels.blocks.paragraph import ParagraphBlock
+from utils.constants import NColors
+```
+
+---
+
+## Workflow Git consigliato
+
+```bash
+# nuova funzionalita'
+git checkout -b feature/nome-funzionalita
+
+# refactoring strutturale
+git checkout -b refactoring/descrizione
+
+# quando tutto funziona
+git checkout main
+git merge feature/nome-funzionalita
+```
+
+Fare sempre un commit di checkpoint prima di refactoring che
+tocca molti file:
+```bash
+git add .
+git commit -m "checkpoint pre-refactoring"
+```
+
+---
+
+## Verifica stato pacchetto
+
+```bash
+# controlla che il pacchetto sia installato correttamente
+pip show notion-lib
+
+# testa import base
+python -c "from notion_lib import NFactory, PageFactory"
+
+# avvia GUI
+python -m notion_lib.notion_gui
+```
