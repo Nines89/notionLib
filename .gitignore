@@ -13,3 +13,14 @@ src/notion_lib/gui/logic/__pycache__
 src/notion_lib/gui/widgets/__pycache__
 src/notion_lib/gui/widgets/automation_tools/__pycache__
 src/notion_lib/gui/dialogs/__pycache__
+client/__pycache__
+gui/__pycache__
+gui/logic/__pycache__
+gui/widgets/__pycache__
+gui/widgets/automation_tools/__pycache__
+nEndpoints/__pycache__
+nModels/__pycache__
+nModels/blocks/__pycache__
+nTypes/__pycache__
+tests/__pycache__
+utils/__pycache__
