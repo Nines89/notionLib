@@ -24,3 +24,4 @@ nTypes/__pycache__
 tests/__pycache__
 utils/__pycache__
 nEndpoints/__pycache__
+src/notion_lib/__pycache__

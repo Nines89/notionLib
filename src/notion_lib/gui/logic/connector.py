@@ -23,10 +23,10 @@ def connect(api_key: str):
     databases:   dict  db_id   -> {id, title, parent_page_id}
     datasources: list  [{id, name, db_id, page_id}]
     """
-    notion_lib.client.auth import NotionApiClient
-    notion_lib.nEndpoints.users import get_bot_token
-    notion_lib.nEndpoints.searches import search_by_title
-    notion_lib.nEndpoints.databases import get_db
+    from notion_lib.client.auth import NotionApiClient
+    from notion_lib.nEndpoints.users import get_bot_token
+    from notion_lib.nEndpoints.searches import search_by_title
+    from notion_lib.nEndpoints.databases import get_db
 
     api      = NotionApiClient(key=api_key)
     bot_name = get_bot_token(api.headers).response.get("name", "Bot")
@@ -94,7 +94,7 @@ def connect(api_key: str):
 
 def load_schema(api, ds_id: str) -> dict:
     """Restituisce il dizionario delle proprietà di un datasource."""
-    notion_lib.nModels.datasources import DataSourceFactory
+    from notion_lib.nModels.datasources import DataSourceFactory
     return DataSourceFactory.find(api.headers, ds_id).schema
 
 
