@@ -5,9 +5,14 @@ Pannello laterale sinistro: form di login o stato connesso.
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit,
-    QPushButton, QFrame,
+    QPushButton, QFrame, QComboBox, QHBoxLayout,
 )
 from PyQt6.QtCore import pyqtSignal, Qt
+
+from notion_lib.client.keystore import (
+    save_key, get_key, delete_key,
+    list_profiles, save_profile_name, remove_profile_name
+)
 
 
 class SidebarWidget(QWidget):
@@ -58,40 +63,122 @@ class SidebarWidget(QWidget):
         lay.addWidget(hint)
 
     def _build_login_area(self) -> QWidget:
-        w   = QWidget()
+        w = QWidget()
         lay = QVBoxLayout(w)
-        lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(8)
 
-        lbl = QLabel("Token API")
-        lbl.setStyleSheet("font-weight: 700; font-size: 11px; color: #A3B3CE; text-transform: uppercase;")
+        # Dropdown profili
+        profile_lbl = QLabel("Profilo salvato")
+        profile_lbl.setStyleSheet("font-weight: 700; font-size: 11px; color: #A3B3CE;")
 
+        self._profile_combo = QComboBox()
+        self._profile_combo.setFixedHeight(36)
+        self._profile_combo.addItem("— Nuovo profilo —", None)
+        for name in list_profiles():
+            self._profile_combo.addItem(name, name)
+        self._profile_combo.currentIndexChanged.connect(self._on_profile_selected)
+
+        # Nome profilo (visibile, non segreto)
+        name_lbl = QLabel("Nome profilo")
+        name_lbl.setStyleSheet("font-weight: 700; font-size: 11px; color: #A3B3CE;")
+        self._name_input = QLineEdit()
+        self._name_input.setPlaceholderText("Es: Workspace personale")
+        self._name_input.setFixedHeight(36)
+
+        # Chiave API (solo per nuovo profilo)
+        key_lbl = QLabel("Token API")
+        key_lbl.setStyleSheet("font-weight: 700; font-size: 11px; color: #A3B3CE;")
         self._key_input = QLineEdit()
         self._key_input.setPlaceholderText("ntn_...")
         self._key_input.setEchoMode(QLineEdit.EchoMode.Password)
         self._key_input.setFixedHeight(36)
-        self._key_input.returnPressed.connect(self._on_connect_clicked)
+
+        # Pulsanti
+        btn_row = QWidget()
+        br = QHBoxLayout(btn_row)
+        br.setContentsMargins(0, 0, 0, 0)
+        br.setSpacing(8)
 
         self._connect_btn = QPushButton("⚡ Connetti")
         self._connect_btn.setObjectName("PrimaryBtn")
         self._connect_btn.setFixedHeight(36)
         self._connect_btn.clicked.connect(self._on_connect_clicked)
 
+        self._save_btn = QPushButton("💾")
+        self._save_btn.setToolTip("Salva profilo nel vault di sistema")
+        self._save_btn.setFixedSize(36, 36)
+        self._save_btn.clicked.connect(self._on_save_profile)
+
+        self._del_btn = QPushButton("🗑")
+        self._del_btn.setToolTip("Elimina profilo")
+        self._del_btn.setFixedSize(36, 36)
+        self._del_btn.setEnabled(False)
+        self._del_btn.clicked.connect(self._on_delete_profile)
+
+        br.addWidget(self._connect_btn, stretch=1)
+        br.addWidget(self._save_btn)
+        br.addWidget(self._del_btn)
+
         self._error_lbl = QLabel()
         self._error_lbl.setWordWrap(True)
         self._error_lbl.setObjectName("Error")
         self._error_lbl.hide()
 
-        api_hint = QLabel("Token disponibile in\nnotion.so/my-integrations")
-        api_hint.setObjectName("Muted")
+        for w_ in [profile_lbl, self._profile_combo,
+                   name_lbl, self._name_input,
+                   key_lbl, self._key_input,
+                   btn_row, self._error_lbl]:
+            lay.addWidget(w_)
 
-        lay.addWidget(lbl)
-        lay.addWidget(self._key_input)
-        lay.addWidget(self._connect_btn)
-        lay.addWidget(self._error_lbl)
-        lay.addSpacing(4)
-        lay.addWidget(api_hint)
         return w
+
+    def _on_profile_selected(self, _):
+        name = self._profile_combo.currentData()
+        is_new = name is None
+        self._key_input.setVisible(is_new)
+        self._del_btn.setEnabled(not is_new)
+        if not is_new:
+            self._name_input.setText(name)
+            self._key_input.clear()
+
+    def _on_save_profile(self):
+        name = self._name_input.text().strip()
+        key = self._key_input.text().strip()
+        if not name or not key:
+            self.show_error("Inserisci nome profilo e token.")
+            return
+        save_key(name, key)
+        save_profile_name(name)
+        # Aggiorna dropdown
+        if self._profile_combo.findData(name) == -1:
+            self._profile_combo.addItem(name, name)
+        self._profile_combo.setCurrentIndex(
+            self._profile_combo.findData(name)
+        )
+
+    def _on_delete_profile(self):
+        name = self._profile_combo.currentData()
+        if not name:
+            return
+        delete_key(name)
+        remove_profile_name(name)
+        idx = self._profile_combo.findData(name)
+        self._profile_combo.removeItem(idx)
+        self._profile_combo.setCurrentIndex(0)
+
+    def _on_connect_clicked(self):
+        name = self._profile_combo.currentData()
+        if name:
+            key = get_key(name)  # recupera dal vault, mai da variabile visibile
+        else:
+            key = self._key_input.text().strip()
+        if not key:
+            self.show_error("Nessun token disponibile.")
+            return
+        self._error_lbl.hide()
+        self._connect_btn.setEnabled(False)
+        self._connect_btn.setText("Connessione…")
+        self.connect_requested.emit(key)
 
     def _build_status_area(self) -> QWidget:
         w   = QWidget()

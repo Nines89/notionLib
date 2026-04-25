@@ -35,65 +35,71 @@ python notion_gui.py
 
 ---
 
-## Come si usa
+---
+## 🔐 Gestione credenziali
 
-| Tab | Cosa fa |
-|-----|---------|
-| 🔍 Workspace | Mostra tutti i database e datasource accessibili |
-| ⚙️ Configura | Configura nome, sorgente, filtri, ordinamento, destinazione, mapping colonne |
-| ▶️ Esegui | Mostra il codice generato, permette di salvarlo e di eseguire l'automazione |
+Le chiavi API vengono salvate nel **vault nativo del sistema operativo** tramite la libreria `keyring`:
 
-### Flusso tipico
+| Sistema operativo | Backend |
+|---|---|
+| Windows | Gestione credenziali (Credential Manager) |
+| macOS | Keychain |
+| Linux | GNOME Keyring / KWallet |
 
-1. Inserisci la chiave API → **Connetti**
-2. Vai in **⚙️ Configura**
-3. Scegli il datasource sorgente (dove leggere i dati)
-4. Aggiungi filtri/ordinamenti se vuoi selezionare solo alcune righe
-5. Scegli il datasource destinazione (dove scrivere)
-6. Mappa le colonne: per ogni colonna della destinazione scegli quale colonna sorgente copiare
-7. Clicca **💾 Genera codice**
-8. Nel tab **▶️ Esegui**: controlla il codice, poi clicca **▶️ Esegui automazione**
-
-Il file `.py` scaricato è una classe Python autonoma che un programmatore può
-modificare per aggiungere logica più complessa.
+Le chiavi non vengono mai scritte in chiaro su disco.
 
 ---
 
-## Struttura del progetto
+## Prerequisiti
 
-```
-notion_gui.py          ← entry point
-avvia.bat              ← avvio rapido Windows
-requirements.txt
-gui/
-├── constants.py       ← filtri, operatori, tipi
-├── state.py           ← stato globale (AppState)
-├── workers.py         ← thread background per chiamate API
-├── app.py             ← MainWindow
-├── logic/
-│   ├── connector.py   ← connessione e caricamento workspace
-│   ├── runner.py      ← esecuzione automazione
-│   └── codegen.py     ← generazione codice Python
-└── widgets/
-    ├── sidebar.py         ← login / stato connesso
-    ├── workspace_tab.py   ← tab Workspace
-    ├── filter_editor.py   ← editor filtri
-    ├── sort_editor.py     ← editor ordinamenti
-    ├── mapping_editor.py  ← editor mapping colonne
-    ├── config_tab.py      ← tab Configura
-    └── run_tab.py         ← tab Esegui
+```bash
+pip install keyring
 ```
 
 ---
 
-## Debug
+## Aggiungere una credenziale
 
-Ogni file ha un compito unico — se qualcosa non funziona:
+**Dalla GUI:** compila i campi **Nome profilo** e **Token API**, poi clicca 💾.
 
-| Problema | File da guardare |
-|----------|-----------------|
-| Connessione fallisce | `gui/logic/connector.py` |
-| Filtri non corretti | `gui/logic/runner.py` → `build_filter()` |
-| Codice generato sbagliato | `gui/logic/codegen.py` |
-| UI filtri non risponde | `gui/widgets/filter_editor.py` |
-| Esecuzione non scrive | `gui/logic/runner.py` → `run_automation()` |
+**Da terminale:**
+
+```python
+import keyring
+keyring.set_password('NotionAutomation', 'nome_profilo', 'ntn_...')
+```
+
+| Parametro | Valore | Note |
+|---|---|---|
+| `'NotionAutomation'` | fisso | identificatore dell'app, non modificare |
+| `'nome_profilo'` | libero | es. `'Workspace personale'` |
+| `'ntn_...'` | il tuo token | copialo da [notion.so/my-integrations](https://notion.so/my-integrations) |
+
+---
+
+## Rimuovere una credenziale
+
+**Dalla GUI:** seleziona il profilo nel dropdown e clicca 🗑.
+
+**Da terminale:**
+
+```python
+import keyring
+keyring.delete_password('NotionAutomation', 'nome_profilo')
+```
+
+---
+
+## Verificare che la credenziale sia stata salvata
+
+```python
+import keyring
+print(keyring.get_password('NotionAutomation', 'nome_profilo'))
+```
+
+> Deve stampare il token. Se restituisce `None`, il profilo non esiste.
+
+
+
+
+---

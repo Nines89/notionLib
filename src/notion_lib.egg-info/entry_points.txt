@@ -1,2 +1,0 @@
-[console_scripts]
-notion-gui = notion_lib.notion_gui:main
