@@ -34,6 +34,7 @@ class RadioTodoTool(QWidget):
         self._page_todos: dict = {}
         self._mode = "datasource"
         self._selected_todo_block_id = ""
+        self._selected_entry_id = ""
         self.setStyleSheet(STYLESHEET)
         self._build_ui()
 
@@ -80,9 +81,17 @@ class RadioTodoTool(QWidget):
         self._todo_prop_combo.setMinimumHeight(42)
         self._todo_prop_combo.currentIndexChanged.connect(self._refresh_action_btns)
 
-        self._entry_list = QListWidget()
-        self._entry_list.setMinimumHeight(150)
-        self._entry_list.itemSelectionChanged.connect(self._refresh_action_btns)
+        self._entry_scroll = QScrollArea()
+        self._entry_scroll.setWidgetResizable(True)
+        self._entry_scroll.setMinimumHeight(220)
+        self._entry_container = QWidget()
+        self._entry_lay = QVBoxLayout(self._entry_container)
+        self._entry_lay.setContentsMargins(8, 8, 8, 8)
+        self._entry_lay.setSpacing(10)
+        self._entry_scroll.setWidget(self._entry_container)
+        self._entry_group = QButtonGroup(self)
+        self._entry_group.setExclusive(True)
+        self._entry_group.buttonClicked.connect(self._on_entry_selected)
 
         self._page_list = QListWidget()
         self._page_list.setMinimumHeight(180)
@@ -90,7 +99,7 @@ class RadioTodoTool(QWidget):
 
         self._todo_scroll = QScrollArea()
         self._todo_scroll.setWidgetResizable(True)
-        self._todo_scroll.setMinimumHeight(180)
+        self._todo_scroll.setMinimumHeight(220)
         self._todo_container = QWidget()
         self._todo_lay = QVBoxLayout(self._todo_container)
         self._todo_lay.setContentsMargins(8, 8, 8, 8)
@@ -130,7 +139,7 @@ class RadioTodoTool(QWidget):
 
         self._entry_label = QLabel("Entry da tenere checkata:")
         cfg_card.add_content(self._entry_label)
-        cfg_card.add_content(self._entry_list)
+        cfg_card.add_content(self._entry_scroll)
         cfg_card.add_content(self._entries_lbl)
 
         self._page_label = QLabel("Pagine disponibili:")
@@ -242,7 +251,7 @@ class RadioTodoTool(QWidget):
             "mode": self._mode,
             "ds_id": self._ds_combo.currentData(),
             "todo_prop": self._todo_prop_combo.currentData(),
-            "entry_id": self._selected_entry_id(),
+            "entry_id": self._selected_entry_id,
             "page_id": self._selected_page_id(),
             "todo_block_id": self._selected_todo_block_id,
         }
@@ -251,8 +260,8 @@ class RadioTodoTool(QWidget):
         if self._mode == "page":
             btn = self._todo_group.checkedButton()
             return btn.text().strip() if btn else "—"
-        item = self._entry_list.currentItem()
-        return item.text().strip() if item else "—"
+        btn = self._entry_group.checkedButton()
+        return btn.text().strip() if btn else "—"
 
     def selected_target_label(self) -> str:
         if self._mode == "page":
@@ -272,7 +281,7 @@ class RadioTodoTool(QWidget):
         self._prop_label.setVisible(is_ds)
         self._todo_prop_combo.setVisible(is_ds)
         self._entry_label.setVisible(is_ds)
-        self._entry_list.setVisible(is_ds)
+        self._entry_scroll.setVisible(is_ds)
         self._entries_lbl.setVisible(is_ds)
 
         self._page_label.setVisible(not is_ds)
@@ -286,10 +295,6 @@ class RadioTodoTool(QWidget):
         else:
             self._on_page_changed()
         self._refresh_action_btns()
-
-    def _selected_entry_id(self):
-        item = self._entry_list.currentItem()
-        return item.data(256) if item else ""
 
     def _selected_page_id(self):
         item = self._page_list.currentItem()
@@ -339,16 +344,30 @@ class RadioTodoTool(QWidget):
         )
 
     def _refresh_entries_ui(self):
+        while self._entry_lay.count():
+            item = self._entry_lay.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                self._entry_group.removeButton(widget)
+                widget.deleteLater()
+
         ds_id = self._normalize_id(self._ds_combo.currentData())
         rows = self._entries.get(ds_id, [])
-        self._entry_list.clear()
-        for row in rows:
-            item = QListWidgetItem(f"🗂️ {row.get('title') or 'Senza titolo'}")
-            item.setData(256, row.get("id"))
-            self._entry_list.addItem(item)
-        if self._entry_list.count() > 0:
-            self._entry_list.setCurrentRow(0)
+        self._selected_entry_id = ""
+        for idx, row in enumerate(rows):
+            label = row.get("title") or "Senza titolo"
+            btn = QRadioButton(f"☑️  {label}")
+            btn.setProperty("entry_id", row.get("id"))
+            btn.setMinimumHeight(36)
+            btn.setStyleSheet("font-size: 14px; padding: 6px 8px;")
+            self._entry_group.addButton(btn)
+            self._entry_lay.addWidget(btn)
+            if idx == 0:
+                self._selected_entry_id = row.get("id")
+                btn.setChecked(True)
+        self._entry_lay.addStretch(1)
         self._entries_lbl.setText(f"Entry caricate: {len(rows)}")
+        self._refresh_action_btns()
 
     def _request_page_todos(self):
         page_id = self._selected_page_id()
@@ -357,6 +376,10 @@ class RadioTodoTool(QWidget):
 
     def _on_todo_selected(self, button):
         self._selected_todo_block_id = button.property("todo_id") or ""
+        self._refresh_action_btns()
+
+    def _on_entry_selected(self, button):
+        self._selected_entry_id = button.property("entry_id") or ""
         self._refresh_action_btns()
 
     def _refresh_page_todos_ui(self):
@@ -403,7 +426,7 @@ class RadioTodoTool(QWidget):
             ready = bool(
                 self._ds_combo.currentData()
                 and self._todo_prop_combo.currentData()
-                and self._selected_entry_id()
+                and self._selected_entry_id
             )
         self._gen_btn.setEnabled(ready)
         self._run_btn.setEnabled(ready)
