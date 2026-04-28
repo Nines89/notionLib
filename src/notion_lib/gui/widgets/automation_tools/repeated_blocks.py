@@ -1,7 +1,6 @@
 """Tool automazione per creare pagine ripetute con contenuto altamente personalizzabile."""
 
 import json
-import re
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QFont
@@ -373,10 +372,10 @@ class RepeatedBlocksTool(QWidget):
         for row in self._block_rows:
             btype = row["type_combo"].currentData() or "paragraph"
             if btype == "table":
-                columns = [c.strip() for c in row["columns_input"].text().split(",") if c.strip()]
+                columns = self._parse_comma_values_keep_empty(row["columns_input"].text())
                 blocks.append({
                     "type": "table",
-                    "columns": columns or ["Col 1", "Col 2"],
+                    "columns": columns or ["", "Col 2"],
                     "rows": row["rows_spin"].value(),
                     "has_row_header": row["title_col_check"].isChecked(),
                     "row_header_values": self._parse_row_header_values(row["row_header_values"].toPlainText()),
@@ -390,7 +389,13 @@ class RepeatedBlocksTool(QWidget):
 
     @staticmethod
     def _parse_row_header_values(raw: str) -> list[str]:
-        return [v.strip() for v in re.split(r"[\n,;]+", raw or "") if v.strip()]
+        return RepeatedBlocksTool._parse_comma_values_keep_empty((raw or "").replace("\n", ",").replace(";", ","))
+
+    @staticmethod
+    def _parse_comma_values_keep_empty(raw: str) -> list[str]:
+        if not (raw or "").strip():
+            return []
+        return [v.strip() for v in (raw or "").split(",")]
 
     def _refresh_mode_ui(self):
         custom_mode = self._mode_combo.currentData() == "custom"
