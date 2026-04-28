@@ -63,6 +63,25 @@ class LoadEntriesWorker(QThread):
             self.failure.emit(self._ds_id, str(e))
 
 
+class LoadPageTodosWorker(QThread):
+    """Carica i blocchi To-Do di una pagina per selezione in UI."""
+    success = pyqtSignal(str, list)   # page_id, todos
+    failure = pyqtSignal(str, str)    # page_id, errore
+
+    def __init__(self, api, page_id: str):
+        super().__init__()
+        self._api = api
+        self._page_id = page_id
+
+    def run(self):
+        try:
+            from notion_lib.gui.logic.radio_todo_runner import list_page_todos
+            todos = list_page_todos(self._api, self._page_id)
+            self.success.emit(self._page_id, todos)
+        except Exception as e:
+            self.failure.emit(self._page_id, str(e))
+
+
 class RunWorker(QThread):
     """Esegue l'automazione (lettura, filtro, ordinamento, scrittura)."""
     success = pyqtSignal(list)   # righe di log
@@ -305,13 +324,20 @@ class RunRadioTodoWorker(QThread):
 
     def run(self):
         try:
-            from notion_lib.gui.logic.radio_todo_runner import run_radio_todo
-            log = run_radio_todo(
-                api=self._api,
-                ds_id=self._cfg["ds_id"],
-                todo_prop=self._cfg["todo_prop"],
-                selected_entry_id=self._cfg["entry_id"],
-            )
+            from notion_lib.gui.logic.radio_todo_runner import run_radio_todo, run_radio_todo_page
+            if self._cfg.get("mode") == "page":
+                log = run_radio_todo_page(
+                    api=self._api,
+                    page_id=self._cfg["page_id"],
+                    selected_block_id=self._cfg["todo_block_id"],
+                )
+            else:
+                log = run_radio_todo(
+                    api=self._api,
+                    ds_id=self._cfg["ds_id"],
+                    todo_prop=self._cfg["todo_prop"],
+                    selected_entry_id=self._cfg["entry_id"],
+                )
             self.success.emit(log)
         except Exception as e:
             self.failure.emit(str(e))
