@@ -204,6 +204,7 @@ class CreateRepeatedBlocksWorker(QThread):
 
     def _build_blocks(self, blueprint: list, index: int, title: str):
         from notion_lib.nModels.blocks.heading import Heading1, Heading2, Heading3
+        from notion_lib.nModels.blocks.list_blocks import ToDo, BulletedListItem, NumberedListItem, Toggle
         from notion_lib.nModels.blocks.paragraph import ParagraphBlock
         from notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
         from notion_lib.nTypes.rich_text import simple_rich_text_list
@@ -221,6 +222,14 @@ class CreateRepeatedBlocksWorker(QThread):
                 blocks.append(Heading3.create(text=text))
             elif btype == "paragraph":
                 blocks.append(ParagraphBlock.create(text=text))
+            elif btype == "to_do":
+                blocks.append(ToDo.create(text=text, checked=bool(item.get("checked", False))))
+            elif btype == "bulleted_list_item":
+                blocks.append(BulletedListItem.create(text=text))
+            elif btype == "numbered_list_item":
+                blocks.append(NumberedListItem.create(text=text))
+            elif btype == "toggle":
+                blocks.append(Toggle.create(text=text))
             elif btype == "table":
                 columns = item.get("columns") or ["Col 1", "Col 2"]
                 rows = int(item.get("rows", 1))

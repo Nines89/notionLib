@@ -117,7 +117,8 @@ class RepeatedBlocksTool(QWidget):
         blocks_card = _SectionCard("🧱", "Contenuto pagina (massima personalizzazione)")
         info = QLabel(
             "Componi i blocchi con l'editor visuale (drag & drop non richiesto). "
-            "Tipi supportati: heading_1, heading_2, heading_3, paragraph, table."
+            "Tipi supportati: heading_1, heading_2, heading_3, paragraph, to_do, "
+            "bulleted_list_item, numbered_list_item, toggle, table."
         )
         info.setWordWrap(True)
         info.setStyleSheet("color: #64748B; font-size: 12px;")
@@ -135,6 +136,14 @@ class RepeatedBlocksTool(QWidget):
         add_h3.clicked.connect(lambda: self._add_block_row({"type": "heading_3", "text": ""}))
         add_par = QPushButton("＋ Paragrafo")
         add_par.clicked.connect(lambda: self._add_block_row({"type": "paragraph", "text": ""}))
+        add_todo = QPushButton("＋ To-Do")
+        add_todo.clicked.connect(lambda: self._add_block_row({"type": "to_do", "text": "", "checked": False}))
+        add_bullet = QPushButton("＋ Bullet")
+        add_bullet.clicked.connect(lambda: self._add_block_row({"type": "bulleted_list_item", "text": ""}))
+        add_numbered = QPushButton("＋ Numbered")
+        add_numbered.clicked.connect(lambda: self._add_block_row({"type": "numbered_list_item", "text": ""}))
+        add_toggle = QPushButton("＋ Toggle")
+        add_toggle.clicked.connect(lambda: self._add_block_row({"type": "toggle", "text": ""}))
         add_table = QPushButton("＋ Tabella")
         add_table.clicked.connect(
             lambda: self._add_block_row({"type": "table", "columns": ["Col 1", "Col 2"], "rows": 3})
@@ -142,7 +151,7 @@ class RepeatedBlocksTool(QWidget):
         clear_btn = QPushButton("🗑 Svuota")
         clear_btn.clicked.connect(self._clear_block_rows)
 
-        for btn in (add_h1, add_h2, add_h3, add_par, add_table, clear_btn):
+        for btn in (add_h1, add_h2, add_h3, add_par, add_todo, add_bullet, add_numbered, add_toggle, add_table, clear_btn):
             btn.setStyleSheet(STYLESHEET)
             ba_lay.addWidget(btn)
         ba_lay.addStretch()
@@ -286,6 +295,10 @@ class RepeatedBlocksTool(QWidget):
         type_combo.addItem("Titolo H2", "heading_2")
         type_combo.addItem("Titolo H3", "heading_3")
         type_combo.addItem("Paragrafo", "paragraph")
+        type_combo.addItem("To-Do", "to_do")
+        type_combo.addItem("Bullet list", "bulleted_list_item")
+        type_combo.addItem("Numbered list", "numbered_list_item")
+        type_combo.addItem("Toggle", "toggle")
         type_combo.addItem("Tabella", "table")
         type_combo.setStyleSheet(STYLESHEET)
 
@@ -301,6 +314,9 @@ class RepeatedBlocksTool(QWidget):
         text_input = QLineEdit(block.get("text", ""))
         text_input.setPlaceholderText("Testo blocco")
         text_input.setStyleSheet(STYLESHEET)
+
+        todo_checked = QCheckBox("Completato")
+        todo_checked.setChecked(bool(block.get("checked", False)))
 
         table_cfg = QWidget()
         tc_l = QHBoxLayout(table_cfg)
@@ -330,6 +346,7 @@ class RepeatedBlocksTool(QWidget):
 
         lay.addWidget(top)
         lay.addWidget(text_input)
+        lay.addWidget(todo_checked)
         lay.addWidget(table_cfg)
         lay.addWidget(row_header_values)
 
@@ -337,6 +354,7 @@ class RepeatedBlocksTool(QWidget):
             "frame": row_frame,
             "type_combo": type_combo,
             "text_input": text_input,
+            "todo_checked": todo_checked,
             "table_cfg": table_cfg,
             "columns_input": columns_input,
             "rows_spin": rows_spin,
@@ -363,7 +381,9 @@ class RepeatedBlocksTool(QWidget):
 
     def _refresh_block_row_visibility(self, row: dict):
         is_table = row["type_combo"].currentData() == "table"
+        is_todo = row["type_combo"].currentData() == "to_do"
         row["text_input"].setVisible(not is_table)
+        row["todo_checked"].setVisible(is_todo)
         row["table_cfg"].setVisible(is_table)
         row["row_header_values"].setVisible(is_table and row["title_col_check"].isChecked())
 
@@ -381,10 +401,13 @@ class RepeatedBlocksTool(QWidget):
                     "row_header_values": self._parse_row_header_values(row["row_header_values"].toPlainText()),
                 })
             else:
-                blocks.append({
+                item = {
                     "type": btype,
                     "text": row["text_input"].text().strip(),
-                })
+                }
+                if btype == "to_do":
+                    item["checked"] = row["todo_checked"].isChecked()
+                blocks.append(item)
         return blocks
 
     @staticmethod

@@ -20,6 +20,7 @@ sys.path.insert(0, ".")
 from client.auth import NotionApiClient
 from nModels.datasources import DataSourceFactory
 from nModels.blocks.heading import Heading1, Heading2, Heading3
+from nModels.blocks.list_blocks import ToDo, BulletedListItem, NumberedListItem, Toggle
 from nModels.blocks.paragraph import ParagraphBlock
 from nModels.blocks.table import TableBlock, TableRowBlock
 from nTypes.rich_text import simple_rich_text_list
@@ -61,6 +62,14 @@ class {cls}:
                 out.append(Heading3.create(text=text))
             elif btype == "paragraph":
                 out.append(ParagraphBlock.create(text=text))
+            elif btype == "to_do":
+                out.append(ToDo.create(text=text, checked=bool(item.get("checked", False))))
+            elif btype == "bulleted_list_item":
+                out.append(BulletedListItem.create(text=text))
+            elif btype == "numbered_list_item":
+                out.append(NumberedListItem.create(text=text))
+            elif btype == "toggle":
+                out.append(Toggle.create(text=text))
             elif btype == "table":
                 columns = item.get("columns") or ["Col 1", "Col 2"]
                 rows = int(item.get("rows", 1))
