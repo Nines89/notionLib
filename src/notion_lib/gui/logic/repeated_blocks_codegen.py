@@ -31,18 +31,18 @@ class {cls}:
     def __init__(self, api_key: str):
         self.api = NotionApiClient(key=api_key)
 
-    def _titles(self):
+    def _title_items(self):
         mode = "{cfg['mode']}"
         if mode == "custom":
             titles = {repr(custom_titles)}
             if not titles:
                 raise ValueError("Nessun titolo custom configurato")
-            return titles
+            return [(i, title) for i, title in enumerate(titles, start=1)]
 
         template = {repr(cfg['title_template'])}
         start = {cfg['start_index']}
         total = {cfg['count']}
-        return [template.format(index=i, title="") for i in range(start, start + total)]
+        return [(i, template.format(index=i, title="")) for i in range(start, start + total)]
 
     def _render(self, text: str, index: int, title: str):
         return (text or "").format(index=index, title=title)
@@ -84,11 +84,11 @@ class {cls}:
         if not isinstance(blueprint, list):
             raise ValueError("Il blueprint JSON deve essere una lista")
 
-        titles = self._titles()
-        for i, title in enumerate(titles, start=1):
+        title_items = self._title_items()
+        for index, title in title_items:
             props = {{title_prop: {{"title": [{{"text": {{"content": title}}}}]}}}}
             page = ds.create_entry(properties=props)
-            blocks = self._blocks_for(blueprint, index=i, title=title)
+            blocks = self._blocks_for(blueprint, index=index, title=title)
             if blocks:
                 page.append_children(blocks)
             print(f"✓ Creata pagina: {{title}}")

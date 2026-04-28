@@ -122,7 +122,12 @@ class RepeatedBlocksTool(QWidget):
         self._blueprint_edit = QTextEdit()
         self._blueprint_edit.setFont(QFont("Consolas", 10))
         self._blueprint_edit.setMinimumHeight(180)
-        self._blueprint_edit.setPlainText(STYLESHEET)
+        self._blueprint_edit.setPlainText(
+            """[
+  {"type": "heading_1", "text": "{title}"},
+  {"type": "paragraph", "text": "Contenuto della pagina {index}."}
+]"""
+        )
 
         blocks_card.add_content(info)
         blocks_card.add_content(self._blueprint_edit)

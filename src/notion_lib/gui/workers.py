@@ -182,20 +182,20 @@ class CreateRepeatedBlocksWorker(QThread):
         self._api = api
         self._cfg = cfg
 
-    def _build_titles(self):
+    def _build_title_items(self):
         mode = self._cfg.get("mode", "range")
         if mode == "custom":
             titles = self._cfg.get("custom_titles") or []
             if not titles:
                 raise ValueError("Nessun titolo inserito in modalità lista personalizzata.")
-            return titles
+            return [(i, title) for i, title in enumerate(titles, start=1)]
 
         template = self._cfg.get("title_template") or "Pagina {index}"
         start = int(self._cfg.get("start_index") or 1)
         total = int(self._cfg.get("count") or 1)
         out = []
         for idx in range(start, start + total):
-            out.append(template.format(index=idx, title=""))
+            out.append((idx, template.format(index=idx, title="")))
         return out
 
     @staticmethod
@@ -245,24 +245,24 @@ class CreateRepeatedBlocksWorker(QThread):
 
             ds = DataSourceFactory.find(self._api.headers, self._cfg["target_id"])
             title_prop = self._cfg["title_prop"]
-            titles = self._build_titles()
+            title_items = self._build_title_items()
 
             raw_blueprint = self._cfg.get("blocks_blueprint") or "[]"
             blueprint = json.loads(raw_blueprint)
             if not isinstance(blueprint, list):
                 raise ValueError("Il blueprint JSON deve essere una lista di blocchi.")
 
-            for i, title in enumerate(titles, start=1):
+            for index, title in title_items:
                 props = {
                     title_prop: {"title": [{"text": {"content": title}}]}
                 }
                 page = ds.create_entry(properties=props)
-                blocks = self._build_blocks(blueprint, index=i, title=title)
+                blocks = self._build_blocks(blueprint, index=index, title=title)
                 if blocks:
                     page.append_children(blocks)
                 log.append(f"✓ Creata pagina {title} ({len(blocks)} blocchi)")
 
-            log.append(f"✓ Completato: create {len(titles)} pagine.")
+            log.append(f"✓ Completato: create {len(title_items)} pagine.")
             self.success.emit(log)
         except Exception as e:
             self.failure.emit(str(e))
