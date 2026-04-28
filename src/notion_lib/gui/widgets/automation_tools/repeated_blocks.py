@@ -322,9 +322,16 @@ class RepeatedBlocksTool(QWidget):
         title_col_check.setChecked(bool(block.get("has_row_header")))
         tc_l.addWidget(title_col_check)
 
+        row_header_values = QTextEdit()
+        row_header_values.setPlaceholderText("Valori colonna titolo (uno per riga)")
+        row_header_values.setMaximumHeight(90)
+        row_header_values.setStyleSheet(STYLESHEET)
+        row_header_values.setPlainText("\n".join(block.get("row_header_values", [])))
+
         lay.addWidget(top)
         lay.addWidget(text_input)
         lay.addWidget(table_cfg)
+        lay.addWidget(row_header_values)
 
         row = {
             "frame": row_frame,
@@ -334,6 +341,7 @@ class RepeatedBlocksTool(QWidget):
             "columns_input": columns_input,
             "rows_spin": rows_spin,
             "title_col_check": title_col_check,
+            "row_header_values": row_header_values,
         }
         self._block_rows.append(row)
         self._blocks_rows_lay.addWidget(row_frame)
@@ -344,6 +352,7 @@ class RepeatedBlocksTool(QWidget):
         self._refresh_block_row_visibility(row)
 
         type_combo.currentIndexChanged.connect(lambda _=None, r=row: self._refresh_block_row_visibility(r))
+        title_col_check.stateChanged.connect(lambda _=None, r=row: self._refresh_block_row_visibility(r))
         remove_btn.clicked.connect(lambda _=None, r=row: self._remove_block_row(r))
 
     def _remove_block_row(self, row: dict):
@@ -356,6 +365,7 @@ class RepeatedBlocksTool(QWidget):
         is_table = row["type_combo"].currentData() == "table"
         row["text_input"].setVisible(not is_table)
         row["table_cfg"].setVisible(is_table)
+        row["row_header_values"].setVisible(is_table and row["title_col_check"].isChecked())
 
     def _collect_blocks_from_rows(self) -> list:
         blocks = []
@@ -368,6 +378,11 @@ class RepeatedBlocksTool(QWidget):
                     "columns": columns or ["Col 1", "Col 2"],
                     "rows": row["rows_spin"].value(),
                     "has_row_header": row["title_col_check"].isChecked(),
+                    "row_header_values": [
+                        v.strip()
+                        for v in row["row_header_values"].toPlainText().splitlines()
+                        if v.strip()
+                    ],
                 })
             else:
                 blocks.append({

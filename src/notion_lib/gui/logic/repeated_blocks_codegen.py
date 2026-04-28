@@ -65,11 +65,16 @@ class {cls}:
                 columns = item.get("columns") or ["Col 1", "Col 2"]
                 rows = int(item.get("rows", 1))
                 has_row_header = bool(item.get("has_row_header", False))
+                row_header_values = item.get("row_header_values") or []
                 header = TableRowBlock.create(cells=[simple_rich_text_list(str(c)) for c in columns])
-                body = [
-                    TableRowBlock.create(cells=[simple_rich_text_list("") for _ in columns])
-                    for _ in range(max(1, rows))
-                ]
+                total_rows = max(1, rows, len(row_header_values) if has_row_header else 0)
+                body = []
+                for r_idx in range(total_rows):
+                    cells = [simple_rich_text_list("") for _ in columns]
+                    if has_row_header and cells:
+                        label = row_header_values[r_idx] if r_idx < len(row_header_values) else ""
+                        cells[0] = simple_rich_text_list(self._render(str(label), index, title))
+                    body.append(TableRowBlock.create(cells=cells))
                 out.append(TableBlock.create(
                     table_width=len(columns),
                     has_column_header=True,
