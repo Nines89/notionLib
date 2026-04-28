@@ -64,6 +64,7 @@ class {cls}:
             elif btype == "table":
                 columns = item.get("columns") or ["Col 1", "Col 2"]
                 rows = int(item.get("rows", 1))
+                has_row_header = bool(item.get("has_row_header", False))
                 header = TableRowBlock.create(cells=[simple_rich_text_list(str(c)) for c in columns])
                 body = [
                     TableRowBlock.create(cells=[simple_rich_text_list("") for _ in columns])
@@ -72,7 +73,7 @@ class {cls}:
                 out.append(TableBlock.create(
                     table_width=len(columns),
                     has_column_header=True,
-                    has_row_header=False,
+                    has_row_header=has_row_header,
                     cells=[header] + body,
                 ))
         return out

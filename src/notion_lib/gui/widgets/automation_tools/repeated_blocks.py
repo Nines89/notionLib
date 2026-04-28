@@ -7,7 +7,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QComboBox, QGroupBox,
     QScrollArea, QPushButton, QTextEdit, QHBoxLayout, QSpinBox,
-    QCheckBox, QFileDialog, QFrame, QMessageBox
+    QCheckBox, QFileDialog, QFrame
 )
 
 # --- STILE QSS ---
@@ -155,30 +155,10 @@ class RepeatedBlocksTool(QWidget):
         row_hint = QLabel("Placeholder supportati: {index}, {title}.")
         row_hint.setStyleSheet("color: #64748B; font-size: 12px;")
 
-        adv_lbl = QLabel("Editor JSON avanzato (opzionale):")
-        adv_lbl.setStyleSheet("color: #64748B; font-size: 12px;")
-
-        self._blueprint_edit = QTextEdit()
-        self._blueprint_edit.setFont(QFont("Consolas", 10))
-        self._blueprint_edit.setMinimumHeight(180)
-
-        sync_row = QWidget()
-        sync_l = QHBoxLayout(sync_row)
-        sync_l.setContentsMargins(0, 0, 0, 0)
-        sync_l.setSpacing(8)
-        apply_json_btn = QPushButton("↺ Applica JSON all'editor grafico")
-        apply_json_btn.setStyleSheet(STYLESHEET)
-        apply_json_btn.clicked.connect(self._apply_json_to_graphic_editor)
-        sync_l.addWidget(apply_json_btn)
-        sync_l.addStretch()
-
         blocks_card.add_content(info)
         blocks_card.add_content(builder_actions)
         blocks_card.add_content(self._blocks_rows_host)
         blocks_card.add_content(row_hint)
-        blocks_card.add_content(adv_lbl)
-        blocks_card.add_content(self._blueprint_edit)
-        blocks_card.add_content(sync_row)
         lay.addWidget(blocks_card)
 
         action_card = _SectionCard("⚡", "Esecuzione")
@@ -256,7 +236,6 @@ class RepeatedBlocksTool(QWidget):
 
     def get_config(self) -> dict:
         custom_titles = [r.strip() for r in self._custom_titles.toPlainText().splitlines() if r.strip()]
-        self._sync_blueprint_text_from_rows()
         return {
             "name": self._name_input.text().strip() or "Automazione ripetitiva",
             "target_id": self._target_combo.currentData(),
@@ -266,7 +245,7 @@ class RepeatedBlocksTool(QWidget):
             "start_index": self._start_index.value(),
             "count": self._count.value(),
             "custom_titles": custom_titles,
-            "blocks_blueprint": self._blueprint_edit.toPlainText().strip() or "[]",
+            "blocks_blueprint": json.dumps(self._collect_blocks_from_rows(), ensure_ascii=False),
         }
 
     def _default_blueprint(self) -> list:
@@ -282,15 +261,13 @@ class RepeatedBlocksTool(QWidget):
         while self._block_rows:
             row = self._block_rows.pop()
             row["frame"].deleteLater()
-        self._sync_blueprint_text_from_rows()
 
     def _load_block_rows(self, blocks: list):
         self._clear_block_rows()
         for block in blocks:
-            self._add_block_row(block, sync=False)
-        self._sync_blueprint_text_from_rows()
+            self._add_block_row(block)
 
-    def _add_block_row(self, block: dict, sync: bool = True):
+    def _add_block_row(self, block: dict):
         row_frame = QFrame()
         row_frame.setFrameShape(QFrame.Shape.StyledPanel)
         row_frame.setStyleSheet("QFrame { border: 1px solid #334155; border-radius: 8px; }")
@@ -341,6 +318,10 @@ class RepeatedBlocksTool(QWidget):
         tc_l.addWidget(QLabel("Righe"))
         tc_l.addWidget(rows_spin)
 
+        title_col_check = QCheckBox("Colonna titolo")
+        title_col_check.setChecked(bool(block.get("has_row_header")))
+        tc_l.addWidget(title_col_check)
+
         lay.addWidget(top)
         lay.addWidget(text_input)
         lay.addWidget(table_cfg)
@@ -352,6 +333,7 @@ class RepeatedBlocksTool(QWidget):
             "table_cfg": table_cfg,
             "columns_input": columns_input,
             "rows_spin": rows_spin,
+            "title_col_check": title_col_check,
         }
         self._block_rows.append(row)
         self._blocks_rows_lay.addWidget(row_frame)
@@ -361,25 +343,14 @@ class RepeatedBlocksTool(QWidget):
         type_combo.setCurrentIndex(idx)
         self._refresh_block_row_visibility(row)
 
-        type_combo.currentIndexChanged.connect(lambda _=None, r=row: self._on_row_changed(r))
-        text_input.textChanged.connect(self._sync_blueprint_text_from_rows)
-        columns_input.textChanged.connect(self._sync_blueprint_text_from_rows)
-        rows_spin.valueChanged.connect(lambda _=None: self._sync_blueprint_text_from_rows())
+        type_combo.currentIndexChanged.connect(lambda _=None, r=row: self._refresh_block_row_visibility(r))
         remove_btn.clicked.connect(lambda _=None, r=row: self._remove_block_row(r))
-
-        if sync:
-            self._sync_blueprint_text_from_rows()
 
     def _remove_block_row(self, row: dict):
         if row not in self._block_rows:
             return
         self._block_rows.remove(row)
         row["frame"].deleteLater()
-        self._sync_blueprint_text_from_rows()
-
-    def _on_row_changed(self, row: dict):
-        self._refresh_block_row_visibility(row)
-        self._sync_blueprint_text_from_rows()
 
     def _refresh_block_row_visibility(self, row: dict):
         is_table = row["type_combo"].currentData() == "table"
@@ -396,6 +367,7 @@ class RepeatedBlocksTool(QWidget):
                     "type": "table",
                     "columns": columns or ["Col 1", "Col 2"],
                     "rows": row["rows_spin"].value(),
+                    "has_row_header": row["title_col_check"].isChecked(),
                 })
             else:
                 blocks.append({
@@ -403,24 +375,6 @@ class RepeatedBlocksTool(QWidget):
                     "text": row["text_input"].text().strip(),
                 })
         return blocks
-
-    def _sync_blueprint_text_from_rows(self):
-        blocks = self._collect_blocks_from_rows()
-        self._blueprint_edit.blockSignals(True)
-        self._blueprint_edit.setPlainText(json.dumps(blocks, ensure_ascii=False, indent=2))
-        self._blueprint_edit.blockSignals(False)
-
-    def _apply_json_to_graphic_editor(self):
-        raw = self._blueprint_edit.toPlainText().strip() or "[]"
-        try:
-            blocks = json.loads(raw)
-        except json.JSONDecodeError as err:
-            QMessageBox.warning(self, "JSON non valido", f"Impossibile applicare il blueprint:\n{err}")
-            return
-        if not isinstance(blocks, list):
-            QMessageBox.warning(self, "JSON non valido", "Il blueprint deve essere una lista di blocchi.")
-            return
-        self._load_block_rows(blocks)
 
     def _refresh_mode_ui(self):
         custom_mode = self._mode_combo.currentData() == "custom"
