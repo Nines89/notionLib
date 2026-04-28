@@ -1,11 +1,13 @@
 """Tool automazione per creare pagine ripetute con contenuto altamente personalizzabile."""
 
+import json
+
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QLineEdit, QComboBox, QGroupBox,
     QScrollArea, QPushButton, QTextEdit, QHBoxLayout, QSpinBox,
-    QCheckBox, QFileDialog
+    QCheckBox, QFileDialog, QFrame, QMessageBox
 )
 
 # --- STILE QSS ---
@@ -21,6 +23,7 @@ class RepeatedBlocksTool(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._schemas = {}
+        self._block_rows = []
         self._build_ui()
 
     def _build_ui(self):
@@ -113,24 +116,69 @@ class RepeatedBlocksTool(QWidget):
 
         blocks_card = _SectionCard("🧱", "Contenuto pagina (massima personalizzazione)")
         info = QLabel(
-            "Definisci i blocchi in JSON. Tipi supportati: heading_1, heading_2, heading_3, "
-            "paragraph, table. Nei testi puoi usare {index} e {title}."
+            "Componi i blocchi con l'editor visuale (drag & drop non richiesto). "
+            "Tipi supportati: heading_1, heading_2, heading_3, paragraph, table."
         )
         info.setWordWrap(True)
         info.setStyleSheet("color: #64748B; font-size: 12px;")
 
+        builder_actions = QWidget()
+        ba_lay = QHBoxLayout(builder_actions)
+        ba_lay.setContentsMargins(0, 0, 0, 0)
+        ba_lay.setSpacing(8)
+
+        add_h1 = QPushButton("＋ H1")
+        add_h1.clicked.connect(lambda: self._add_block_row({"type": "heading_1", "text": "{title}"}))
+        add_h2 = QPushButton("＋ H2")
+        add_h2.clicked.connect(lambda: self._add_block_row({"type": "heading_2", "text": ""}))
+        add_h3 = QPushButton("＋ H3")
+        add_h3.clicked.connect(lambda: self._add_block_row({"type": "heading_3", "text": ""}))
+        add_par = QPushButton("＋ Paragrafo")
+        add_par.clicked.connect(lambda: self._add_block_row({"type": "paragraph", "text": ""}))
+        add_table = QPushButton("＋ Tabella")
+        add_table.clicked.connect(
+            lambda: self._add_block_row({"type": "table", "columns": ["Col 1", "Col 2"], "rows": 3})
+        )
+        clear_btn = QPushButton("🗑 Svuota")
+        clear_btn.clicked.connect(self._clear_block_rows)
+
+        for btn in (add_h1, add_h2, add_h3, add_par, add_table, clear_btn):
+            btn.setStyleSheet(STYLESHEET)
+            ba_lay.addWidget(btn)
+        ba_lay.addStretch()
+
+        self._blocks_rows_host = QWidget()
+        self._blocks_rows_lay = QVBoxLayout(self._blocks_rows_host)
+        self._blocks_rows_lay.setContentsMargins(0, 0, 0, 0)
+        self._blocks_rows_lay.setSpacing(8)
+
+        row_hint = QLabel("Placeholder supportati: {index}, {title}.")
+        row_hint.setStyleSheet("color: #64748B; font-size: 12px;")
+
+        adv_lbl = QLabel("Editor JSON avanzato (opzionale):")
+        adv_lbl.setStyleSheet("color: #64748B; font-size: 12px;")
+
         self._blueprint_edit = QTextEdit()
         self._blueprint_edit.setFont(QFont("Consolas", 10))
         self._blueprint_edit.setMinimumHeight(180)
-        self._blueprint_edit.setPlainText(
-            """[
-  {"type": "heading_1", "text": "{title}"},
-  {"type": "paragraph", "text": "Contenuto della pagina {index}."}
-]"""
-        )
+
+        sync_row = QWidget()
+        sync_l = QHBoxLayout(sync_row)
+        sync_l.setContentsMargins(0, 0, 0, 0)
+        sync_l.setSpacing(8)
+        apply_json_btn = QPushButton("↺ Applica JSON all'editor grafico")
+        apply_json_btn.setStyleSheet(STYLESHEET)
+        apply_json_btn.clicked.connect(self._apply_json_to_graphic_editor)
+        sync_l.addWidget(apply_json_btn)
+        sync_l.addStretch()
 
         blocks_card.add_content(info)
+        blocks_card.add_content(builder_actions)
+        blocks_card.add_content(self._blocks_rows_host)
+        blocks_card.add_content(row_hint)
+        blocks_card.add_content(adv_lbl)
         blocks_card.add_content(self._blueprint_edit)
+        blocks_card.add_content(sync_row)
         lay.addWidget(blocks_card)
 
         action_card = _SectionCard("⚡", "Esecuzione")
@@ -179,6 +227,7 @@ class RepeatedBlocksTool(QWidget):
         lay.addStretch()
         scroll.setWidget(content)
         outer.addWidget(scroll)
+        self._load_default_blueprint_rows()
         self._refresh_mode_ui()
 
     def populate_datasources(self, datasources: list):
@@ -207,6 +256,7 @@ class RepeatedBlocksTool(QWidget):
 
     def get_config(self) -> dict:
         custom_titles = [r.strip() for r in self._custom_titles.toPlainText().splitlines() if r.strip()]
+        self._sync_blueprint_text_from_rows()
         return {
             "name": self._name_input.text().strip() or "Automazione ripetitiva",
             "target_id": self._target_combo.currentData(),
@@ -218,6 +268,159 @@ class RepeatedBlocksTool(QWidget):
             "custom_titles": custom_titles,
             "blocks_blueprint": self._blueprint_edit.toPlainText().strip() or "[]",
         }
+
+    def _default_blueprint(self) -> list:
+        return [
+            {"type": "heading_1", "text": "{title}"},
+            {"type": "paragraph", "text": "Contenuto della pagina {index}."},
+        ]
+
+    def _load_default_blueprint_rows(self):
+        self._load_block_rows(self._default_blueprint())
+
+    def _clear_block_rows(self):
+        while self._block_rows:
+            row = self._block_rows.pop()
+            row["frame"].deleteLater()
+        self._sync_blueprint_text_from_rows()
+
+    def _load_block_rows(self, blocks: list):
+        self._clear_block_rows()
+        for block in blocks:
+            self._add_block_row(block, sync=False)
+        self._sync_blueprint_text_from_rows()
+
+    def _add_block_row(self, block: dict, sync: bool = True):
+        row_frame = QFrame()
+        row_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        row_frame.setStyleSheet("QFrame { border: 1px solid #334155; border-radius: 8px; }")
+
+        lay = QVBoxLayout(row_frame)
+        lay.setContentsMargins(10, 8, 10, 8)
+        lay.setSpacing(6)
+
+        top = QWidget()
+        top_l = QHBoxLayout(top)
+        top_l.setContentsMargins(0, 0, 0, 0)
+        top_l.setSpacing(8)
+
+        type_combo = QComboBox()
+        type_combo.addItem("Titolo H1", "heading_1")
+        type_combo.addItem("Titolo H2", "heading_2")
+        type_combo.addItem("Titolo H3", "heading_3")
+        type_combo.addItem("Paragrafo", "paragraph")
+        type_combo.addItem("Tabella", "table")
+        type_combo.setStyleSheet(STYLESHEET)
+
+        remove_btn = QPushButton("Rimuovi")
+        remove_btn.setStyleSheet(STYLESHEET)
+        remove_btn.setFixedHeight(28)
+
+        top_l.addWidget(QLabel("Tipo blocco"))
+        top_l.addWidget(type_combo)
+        top_l.addStretch()
+        top_l.addWidget(remove_btn)
+
+        text_input = QLineEdit(block.get("text", ""))
+        text_input.setPlaceholderText("Testo blocco")
+        text_input.setStyleSheet(STYLESHEET)
+
+        table_cfg = QWidget()
+        tc_l = QHBoxLayout(table_cfg)
+        tc_l.setContentsMargins(0, 0, 0, 0)
+        tc_l.setSpacing(8)
+        columns_input = QLineEdit(", ".join(block.get("columns", ["Col 1", "Col 2"])))
+        columns_input.setPlaceholderText("Colonna 1, Colonna 2, ...")
+        columns_input.setStyleSheet(STYLESHEET)
+        rows_spin = QSpinBox()
+        rows_spin.setRange(1, 100)
+        rows_spin.setValue(max(1, int(block.get("rows", 1))))
+        rows_spin.setStyleSheet(STYLESHEET)
+        tc_l.addWidget(QLabel("Colonne"))
+        tc_l.addWidget(columns_input, 1)
+        tc_l.addWidget(QLabel("Righe"))
+        tc_l.addWidget(rows_spin)
+
+        lay.addWidget(top)
+        lay.addWidget(text_input)
+        lay.addWidget(table_cfg)
+
+        row = {
+            "frame": row_frame,
+            "type_combo": type_combo,
+            "text_input": text_input,
+            "table_cfg": table_cfg,
+            "columns_input": columns_input,
+            "rows_spin": rows_spin,
+        }
+        self._block_rows.append(row)
+        self._blocks_rows_lay.addWidget(row_frame)
+
+        block_type = block.get("type", "paragraph")
+        idx = max(0, type_combo.findData(block_type))
+        type_combo.setCurrentIndex(idx)
+        self._refresh_block_row_visibility(row)
+
+        type_combo.currentIndexChanged.connect(lambda _=None, r=row: self._on_row_changed(r))
+        text_input.textChanged.connect(self._sync_blueprint_text_from_rows)
+        columns_input.textChanged.connect(self._sync_blueprint_text_from_rows)
+        rows_spin.valueChanged.connect(lambda _=None: self._sync_blueprint_text_from_rows())
+        remove_btn.clicked.connect(lambda _=None, r=row: self._remove_block_row(r))
+
+        if sync:
+            self._sync_blueprint_text_from_rows()
+
+    def _remove_block_row(self, row: dict):
+        if row not in self._block_rows:
+            return
+        self._block_rows.remove(row)
+        row["frame"].deleteLater()
+        self._sync_blueprint_text_from_rows()
+
+    def _on_row_changed(self, row: dict):
+        self._refresh_block_row_visibility(row)
+        self._sync_blueprint_text_from_rows()
+
+    def _refresh_block_row_visibility(self, row: dict):
+        is_table = row["type_combo"].currentData() == "table"
+        row["text_input"].setVisible(not is_table)
+        row["table_cfg"].setVisible(is_table)
+
+    def _collect_blocks_from_rows(self) -> list:
+        blocks = []
+        for row in self._block_rows:
+            btype = row["type_combo"].currentData() or "paragraph"
+            if btype == "table":
+                columns = [c.strip() for c in row["columns_input"].text().split(",") if c.strip()]
+                blocks.append({
+                    "type": "table",
+                    "columns": columns or ["Col 1", "Col 2"],
+                    "rows": row["rows_spin"].value(),
+                })
+            else:
+                blocks.append({
+                    "type": btype,
+                    "text": row["text_input"].text().strip(),
+                })
+        return blocks
+
+    def _sync_blueprint_text_from_rows(self):
+        blocks = self._collect_blocks_from_rows()
+        self._blueprint_edit.blockSignals(True)
+        self._blueprint_edit.setPlainText(json.dumps(blocks, ensure_ascii=False, indent=2))
+        self._blueprint_edit.blockSignals(False)
+
+    def _apply_json_to_graphic_editor(self):
+        raw = self._blueprint_edit.toPlainText().strip() or "[]"
+        try:
+            blocks = json.loads(raw)
+        except json.JSONDecodeError as err:
+            QMessageBox.warning(self, "JSON non valido", f"Impossibile applicare il blueprint:\n{err}")
+            return
+        if not isinstance(blocks, list):
+            QMessageBox.warning(self, "JSON non valido", "Il blueprint deve essere una lista di blocchi.")
+            return
+        self._load_block_rows(blocks)
 
     def _refresh_mode_ui(self):
         custom_mode = self._mode_combo.currentData() == "custom"
