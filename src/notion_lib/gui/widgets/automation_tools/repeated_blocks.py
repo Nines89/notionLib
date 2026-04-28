@@ -1,6 +1,7 @@
 """Tool automazione per creare pagine ripetute con contenuto altamente personalizzabile."""
 
 import json
+import re
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QFont
@@ -323,7 +324,7 @@ class RepeatedBlocksTool(QWidget):
         tc_l.addWidget(title_col_check)
 
         row_header_values = QTextEdit()
-        row_header_values.setPlaceholderText("Valori colonna titolo (uno per riga)")
+        row_header_values.setPlaceholderText("Valori colonna titolo (uno per riga oppure separati da virgole)")
         row_header_values.setMaximumHeight(90)
         row_header_values.setStyleSheet(STYLESHEET)
         row_header_values.setPlainText("\n".join(block.get("row_header_values", [])))
@@ -378,11 +379,7 @@ class RepeatedBlocksTool(QWidget):
                     "columns": columns or ["Col 1", "Col 2"],
                     "rows": row["rows_spin"].value(),
                     "has_row_header": row["title_col_check"].isChecked(),
-                    "row_header_values": [
-                        v.strip()
-                        for v in row["row_header_values"].toPlainText().splitlines()
-                        if v.strip()
-                    ],
+                    "row_header_values": self._parse_row_header_values(row["row_header_values"].toPlainText()),
                 })
             else:
                 blocks.append({
@@ -390,6 +387,10 @@ class RepeatedBlocksTool(QWidget):
                     "text": row["text_input"].text().strip(),
                 })
         return blocks
+
+    @staticmethod
+    def _parse_row_header_values(raw: str) -> list[str]:
+        return [v.strip() for v in re.split(r"[\n,;]+", raw or "") if v.strip()]
 
     def _refresh_mode_ui(self):
         custom_mode = self._mode_combo.currentData() == "custom"
