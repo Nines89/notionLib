@@ -206,7 +206,9 @@ class CreateRepeatedBlocksWorker(QThread):
         from notion_lib.nModels.blocks.heading import Heading1, Heading2, Heading3
         from notion_lib.nModels.blocks.list_blocks import ToDo, BulletedListItem, NumberedListItem, Toggle
         from notion_lib.nModels.blocks.paragraph import ParagraphBlock
+        from notion_lib.nModels.blocks.special_blocks import DividerBlock, CalloutBlock, BreadcrumbBlock, QuoteBlock
         from notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
+        from notion_lib.nTypes.icons import NEmoji
         from notion_lib.nTypes.rich_text import simple_rich_text_list
 
         blocks = []
@@ -230,6 +232,14 @@ class CreateRepeatedBlocksWorker(QThread):
                 blocks.append(NumberedListItem.create(text=text))
             elif btype == "toggle":
                 blocks.append(Toggle.create(text=text))
+            elif btype == "divider":
+                blocks.append(DividerBlock.create())
+            elif btype == "callout":
+                blocks.append(CalloutBlock.create(text=text, icon=NEmoji({"emoji": "💡"})))
+            elif btype == "breadcrumb":
+                blocks.append(BreadcrumbBlock.create())
+            elif btype == "quote":
+                blocks.append(QuoteBlock.create(text=text))
             elif btype == "table":
                 columns = item.get("columns") or ["Col 1", "Col 2"]
                 rows = int(item.get("rows", 1))

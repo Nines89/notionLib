@@ -22,7 +22,9 @@ from nModels.datasources import DataSourceFactory
 from nModels.blocks.heading import Heading1, Heading2, Heading3
 from nModels.blocks.list_blocks import ToDo, BulletedListItem, NumberedListItem, Toggle
 from nModels.blocks.paragraph import ParagraphBlock
+from nModels.blocks.special_blocks import DividerBlock, CalloutBlock, BreadcrumbBlock, QuoteBlock
 from nModels.blocks.table import TableBlock, TableRowBlock
+from nTypes.icons import NEmoji
 from nTypes.rich_text import simple_rich_text_list
 
 
@@ -70,6 +72,14 @@ class {cls}:
                 out.append(NumberedListItem.create(text=text))
             elif btype == "toggle":
                 out.append(Toggle.create(text=text))
+            elif btype == "divider":
+                out.append(DividerBlock.create())
+            elif btype == "callout":
+                out.append(CalloutBlock.create(text=text, icon=NEmoji({"emoji": "💡"})))
+            elif btype == "breadcrumb":
+                out.append(BreadcrumbBlock.create())
+            elif btype == "quote":
+                out.append(QuoteBlock.create(text=text))
             elif btype == "table":
                 columns = item.get("columns") or ["Col 1", "Col 2"]
                 rows = int(item.get("rows", 1))

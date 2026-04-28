@@ -118,7 +118,7 @@ class RepeatedBlocksTool(QWidget):
         info = QLabel(
             "Componi i blocchi con l'editor visuale (drag & drop non richiesto). "
             "Tipi supportati: heading_1, heading_2, heading_3, paragraph, to_do, "
-            "bulleted_list_item, numbered_list_item, toggle, table."
+            "bulleted_list_item, numbered_list_item, toggle, divider, callout, breadcrumb, quote, table."
         )
         info.setWordWrap(True)
         info.setStyleSheet("color: #64748B; font-size: 12px;")
@@ -144,6 +144,14 @@ class RepeatedBlocksTool(QWidget):
         add_numbered.clicked.connect(lambda: self._add_block_row({"type": "numbered_list_item", "text": ""}))
         add_toggle = QPushButton("＋ Toggle")
         add_toggle.clicked.connect(lambda: self._add_block_row({"type": "toggle", "text": ""}))
+        add_divider = QPushButton("＋ Divider")
+        add_divider.clicked.connect(lambda: self._add_block_row({"type": "divider"}))
+        add_callout = QPushButton("＋ Callout")
+        add_callout.clicked.connect(lambda: self._add_block_row({"type": "callout", "text": ""}))
+        add_breadcrumb = QPushButton("＋ Breadcrumb")
+        add_breadcrumb.clicked.connect(lambda: self._add_block_row({"type": "breadcrumb"}))
+        add_quote = QPushButton("＋ Quote")
+        add_quote.clicked.connect(lambda: self._add_block_row({"type": "quote", "text": ""}))
         add_table = QPushButton("＋ Tabella")
         add_table.clicked.connect(
             lambda: self._add_block_row({"type": "table", "columns": ["Col 1", "Col 2"], "rows": 3})
@@ -151,7 +159,10 @@ class RepeatedBlocksTool(QWidget):
         clear_btn = QPushButton("🗑 Svuota")
         clear_btn.clicked.connect(self._clear_block_rows)
 
-        for btn in (add_h1, add_h2, add_h3, add_par, add_todo, add_bullet, add_numbered, add_toggle, add_table, clear_btn):
+        for btn in (
+            add_h1, add_h2, add_h3, add_par, add_todo, add_bullet, add_numbered, add_toggle,
+            add_divider, add_callout, add_breadcrumb, add_quote, add_table, clear_btn
+        ):
             btn.setStyleSheet(STYLESHEET)
             ba_lay.addWidget(btn)
         ba_lay.addStretch()
@@ -299,6 +310,10 @@ class RepeatedBlocksTool(QWidget):
         type_combo.addItem("Bullet list", "bulleted_list_item")
         type_combo.addItem("Numbered list", "numbered_list_item")
         type_combo.addItem("Toggle", "toggle")
+        type_combo.addItem("Divider", "divider")
+        type_combo.addItem("Callout", "callout")
+        type_combo.addItem("Breadcrumb", "breadcrumb")
+        type_combo.addItem("Quote", "quote")
         type_combo.addItem("Tabella", "table")
         type_combo.setStyleSheet(STYLESHEET)
 
@@ -380,9 +395,10 @@ class RepeatedBlocksTool(QWidget):
         row["frame"].deleteLater()
 
     def _refresh_block_row_visibility(self, row: dict):
-        is_table = row["type_combo"].currentData() == "table"
-        is_todo = row["type_combo"].currentData() == "to_do"
-        row["text_input"].setVisible(not is_table)
+        btype = row["type_combo"].currentData()
+        is_table = btype == "table"
+        is_todo = btype == "to_do"
+        row["text_input"].setVisible(not is_table and btype not in {"divider", "breadcrumb"})
         row["todo_checked"].setVisible(is_todo)
         row["table_cfg"].setVisible(is_table)
         row["row_header_values"].setVisible(is_table and row["title_col_check"].isChecked())
@@ -405,6 +421,8 @@ class RepeatedBlocksTool(QWidget):
                     "type": btype,
                     "text": row["text_input"].text().strip(),
                 }
+                if btype in {"divider", "breadcrumb"}:
+                    item = {"type": btype}
                 if btype == "to_do":
                     item["checked"] = row["todo_checked"].isChecked()
                 blocks.append(item)
