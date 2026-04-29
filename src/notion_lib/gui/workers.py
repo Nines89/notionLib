@@ -341,3 +341,27 @@ class RunRadioTodoWorker(QThread):
             self.success.emit(log)
         except Exception as e:
             self.failure.emit(str(e))
+
+
+class RunPruneOldEntriesWorker(QThread):
+    """Elimina dal datasource le entry più vecchie di X giorni."""
+    success = pyqtSignal(list)
+    failure = pyqtSignal(str)
+
+    def __init__(self, api, cfg: dict):
+        super().__init__()
+        self._api = api
+        self._cfg = cfg
+
+    def run(self):
+        try:
+            from notion_lib.gui.logic.prune_old_entries_runner import run_prune_old_entries
+            log = run_prune_old_entries(
+                api=self._api,
+                ds_id=self._cfg["ds_id"],
+                date_prop=self._cfg["date_prop"],
+                days=int(self._cfg["days"]),
+            )
+            self.success.emit(log)
+        except Exception as e:
+            self.failure.emit(str(e))

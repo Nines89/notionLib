@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
 from notion_lib.gui.state import get_state, reset_state
 from notion_lib.gui.workers import (
     ConnectWorker, LoadSchemaWorker, LoadEntriesWorker, LoadPageTodosWorker,
-    RunWorker, CreateRepeatedBlocksWorker, RunRadioTodoWorker,
+    RunWorker, CreateRepeatedBlocksWorker, RunRadioTodoWorker, RunPruneOldEntriesWorker,
 )
 from notion_lib.gui.logic.codegen import generate
 
@@ -23,6 +23,7 @@ from notion_lib.gui.widgets.automations_tab import AutomationsTab
 from notion_lib.gui.widgets.automation_tools.copy_datasource import CopyDatasourceTool
 from notion_lib.gui.widgets.automation_tools.repeated_blocks import RepeatedBlocksTool
 from notion_lib.gui.widgets.automation_tools.radio_todo import RadioTodoTool
+from notion_lib.gui.widgets.automation_tools.prune_old_entries import PruneOldEntriesTool
 
 
 class MainWindow(QMainWindow):
@@ -107,6 +108,15 @@ class MainWindow(QMainWindow):
             gradient_end="#14B8A6",
             tool_widget=self._radio_todo_tool,
         )
+        self._prune_old_tool = PruneOldEntriesTool()
+        self._auto_tab.register_tool(
+            icon="🧹",
+            title="Pulisci entries vecchie",
+            description="Elimina automaticamente le entry più vecchie di X giorni in base a una proprietà data.",
+            gradient_start="#B45309",
+            gradient_end="#F59E0B",
+            tool_widget=self._prune_old_tool,
+        )
 
         content_lay.addWidget(self._tabs)
         root.addWidget(content, stretch=1)
@@ -123,6 +133,9 @@ class MainWindow(QMainWindow):
         self._radio_todo_tool.page_todos_needed.connect(self._on_page_todos_needed)
         self._radio_todo_tool.generate_requested.connect(self._on_radio_todo_generate)
         self._radio_todo_tool.run_requested.connect(self._on_radio_todo_run)
+        self._prune_old_tool.schema_needed.connect(self._on_schema_needed)
+        self._prune_old_tool.generate_requested.connect(self._on_prune_old_generate)
+        self._prune_old_tool.run_requested.connect(self._on_prune_old_run)
 
         # ── Status bar ────────────────────────────────────────────
         self._status = QStatusBar()
@@ -156,6 +169,7 @@ class MainWindow(QMainWindow):
         self._copy_tool.populate_datasources(datasources)
         self._repeat_tool.populate_datasources(datasources)
         self._radio_todo_tool.populate_datasources(datasources)
+        self._prune_old_tool.populate_datasources(datasources)
         pages_list = sorted(pages.values(), key=lambda p: (p.get("title") or "").lower())
         self._radio_todo_tool.populate_pages(pages_list)
         self._tabs.setEnabled(True)
@@ -194,6 +208,7 @@ class MainWindow(QMainWindow):
             self._copy_tool.update_schema(ds_id, state.ds_schemas[ds_id])
             self._repeat_tool.update_schema(ds_id, state.ds_schemas[ds_id])
             self._radio_todo_tool.update_schema(ds_id, state.ds_schemas[ds_id])
+            self._prune_old_tool.update_schema(ds_id, state.ds_schemas[ds_id])
             return
         w = LoadSchemaWorker(api, ds_id)
         w.success.connect(self._on_schema_ok)
@@ -208,6 +223,7 @@ class MainWindow(QMainWindow):
         self._copy_tool.update_schema(ds_id, schema)
         self._repeat_tool.update_schema(ds_id, schema)
         self._radio_todo_tool.update_schema(ds_id, schema)
+        self._prune_old_tool.update_schema(ds_id, schema)
         self._status.showMessage("Schema caricato.")
 
     def _on_schema_fail(self, ds_id: str, error: str):
@@ -612,3 +628,38 @@ class MainWindow(QMainWindow):
         self._radio_todo_tool.set_running(False)
         self._radio_todo_tool.show_log([f"✗ Errore fatale: {error}"])
         self._status.showMessage("Applicazione radio To-Do fallita.")
+
+    def _on_prune_old_generate(self, cfg: dict):
+        from notion_lib.gui.logic.prune_old_entries_codegen import generate_prune_old_entries_code
+        state = get_state()
+
+        def ds_label(ds_id: str) -> str:
+            for d in state.datasources:
+                if d["id"] == ds_id:
+                    return f"{d['name']}  [{d['db_title']}]"
+            return ds_id or "—"
+
+        self._prune_old_tool.set_code(generate_prune_old_entries_code(cfg, ds_label(cfg["ds_id"])))
+
+    def _on_prune_old_run(self, cfg: dict):
+        state = get_state()
+        if not state.api:
+            return
+        self._prune_old_tool.set_running(True)
+        self._status.showMessage("Eliminazione entries vecchie in corso…")
+        w = RunPruneOldEntriesWorker(state.api, cfg)
+        w.success.connect(self._on_prune_old_ok)
+        w.failure.connect(self._on_prune_old_fail)
+        w.finished.connect(lambda worker=w: self._cleanup_worker(worker))
+        self._workers.append(w)
+        w.start()
+
+    def _on_prune_old_ok(self, log: list):
+        self._prune_old_tool.set_running(False)
+        self._prune_old_tool.show_log(log)
+        self._status.showMessage("Pulizia completata.")
+
+    def _on_prune_old_fail(self, error: str):
+        self._prune_old_tool.set_running(False)
+        self._prune_old_tool.show_log([f"✗ Errore fatale: {error}"])
+        self._status.showMessage("Pulizia fallita.")
