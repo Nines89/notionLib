@@ -21,16 +21,16 @@ def register_block(block_type: str):
 
 
 def _ensure_registry_populated():
-    """
-    Importa tutti i moduli di blocco per garantire che i decorator
-    @register_block abbiano eseguito e popolato _BLOCK_REGISTRY.
-
-    Chiamata lazy: viene eseguita una sola volta al primo NFactory.find().
-    """
-    if len(_BLOCK_REGISTRY) > 3:   # paragraph + unsupported già registrati + check for meetings
+    global _REGISTRY_POPULATED
+    if _REGISTRY_POPULATED:
         return
-    import notion_lib.nModels.blocks.list_blocks  # noqa: F401
+    import notion_lib.nModels.blocks.list_blocks    # noqa: F401
     import notion_lib.nModels.blocks.meeting_notes  # noqa: F401
+    import notion_lib.nModels.blocks.special_blocks # noqa: F401
+    import notion_lib.nModels.blocks.heading        # noqa: F401
+    import notion_lib.nModels.blocks.media          # noqa: F401
+    import notion_lib.nModels.blocks.table          # noqa: F401
+    _REGISTRY_POPULATED = True
 
 
 class BlockError(Exception):
