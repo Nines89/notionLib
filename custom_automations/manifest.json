@@ -1,0 +1,11 @@
+[
+  {
+    "slug": "ritrova_tutta_la_storia",
+    "name": "Ritrova tutta la storia",
+    "icon": "📒",
+    "description": "Recupera tutti gli eventi",
+    "gradient_start": "#2563EB",
+    "gradient_end": "#22D3EE",
+    "script_path": "custom_automations\\ritrova_tutta_la_storia\\script.py"
+  }
+]

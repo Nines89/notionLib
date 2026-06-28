@@ -23,6 +23,9 @@ from notion_lib.gui.widgets.automations_tab import AutomationsTab
 from notion_lib.gui.widgets.automation_tools.copy_datasource import CopyDatasourceTool
 from notion_lib.gui.widgets.automation_tools.repeated_blocks import RepeatedBlocksTool
 from notion_lib.gui.widgets.automation_tools.radio_todo import RadioTodoTool
+from notion_lib.gui.logic.custom_automation_manager import CustomAutomationManager
+from notion_lib.gui.widgets.custom_automation_dialog import CustomAutomationDialog
+from notion_lib.gui.widgets.automation_tools.custom_tool import CustomAutomationTool
 
 
 class MainWindow(QMainWindow):
@@ -33,6 +36,8 @@ class MainWindow(QMainWindow):
         self.resize(1320, 860)
         self.setMinimumSize(900, 600)
         self._workers: list = []
+        self._custom_manager = CustomAutomationManager()
+        self._custom_tools: dict[str, CustomAutomationTool] = {}
         self._build_ui()
 
     def _build_ui(self):
@@ -122,11 +127,88 @@ class MainWindow(QMainWindow):
         self._radio_todo_tool.entries_needed.connect(self._on_entries_needed)
         self._radio_todo_tool.generate_requested.connect(self._on_radio_todo_generate)
         self._radio_todo_tool.run_requested.connect(self._on_radio_todo_run)
+        # Collega il tasto + della home
+        self._auto_tab.set_add_custom_callback(self._on_add_custom_requested)
+        # Carica le automazioni custom salvate
+        self._load_custom_automations()
 
         # ── Status bar ────────────────────────────────────────────
         self._status = QStatusBar()
         self.setStatusBar(self._status)
         self._status.showMessage("Inserisci la chiave API per iniziare.")
+
+        # ══════════════════════════════════════════════════════════════
+        # Custom Automations
+        # ══════════════════════════════════════════════════════════════
+
+    def _load_custom_automations(self):
+        """Carica dal manifest e registra tutte le automazioni custom salvate."""
+        for entry in self._custom_manager.load_all():
+            self._register_custom_entry(entry)
+
+    def _register_custom_entry(self, entry: dict):
+        """
+        Crea il CustomAutomationTool, lo registra nel tab e lo salva
+        in self._custom_tools per propagare la api_key in seguito.
+        """
+        tool = CustomAutomationTool(
+            slug=entry["slug"],
+            name=entry["name"],
+            script_path=entry["script_path"],
+        )
+
+        # Se l'utente è già connesso, inietta subito la chiave
+        state = get_state()
+        if state.api:
+            tool.set_api_key(state.api.key)
+
+        self._custom_tools[entry["slug"]] = tool
+
+        self._auto_tab.register_custom_tool(
+            slug=entry["slug"],
+            icon=entry["icon"],
+            title=entry["name"],
+            description=entry["description"] or "Automazione personalizzata",
+            gradient_start=entry["gradient_start"],
+            gradient_end=entry["gradient_end"],
+            tool_widget=tool,
+        )
+
+    def _on_add_custom_requested(self):
+        """Apre il dialog di creazione e, se confermato, registra la nuova automazione."""
+        dialog = CustomAutomationDialog(parent=self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        cfg = dialog.get_config()
+        try:
+            entry = self._custom_manager.save(
+                name=cfg["name"],
+                icon=cfg["icon"],
+                description=cfg["description"],
+                gradient_start=cfg["gradient_start"],
+                gradient_end=cfg["gradient_end"],
+                selected_objects=cfg["selected_objects"],
+            )
+        except Exception as e:
+            QMessageBox.critical(
+                self, "Errore",
+                f"Impossibile salvare l\'automazione:\\n{e}"
+            )
+            return
+
+        self._register_custom_entry(entry)
+        self._status.showMessage(
+            f"Automazione \'{cfg['name']}\' creata. "
+            f"Script: {entry['script_path']}"
+        )
+        QMessageBox.information(
+            self,
+            "Automazione creata",
+            f"✓  \'{cfg['name']}\' è stata aggiunta alla home.\\n\\n"
+            f"Il template si trova in:\\n{entry['script_path']}\\n\\n"
+            f"Aprilo con \'Apri con editor\' dentro la tile per modificarlo.",
+        )
 
     # ══════════════════════════════════════════════════════════════
     # Connessione
@@ -160,10 +242,11 @@ class MainWindow(QMainWindow):
             f"Connesso come {bot_name}  ·  "
             f"{len(pages)} pagine, {len(databases)} database, {len(datasources)} datasource"
         )
-
         # Precarica i primi 2 schemi in background
         for ds in datasources[:2]:
             self._start_schema_load(api, ds["id"])
+        for tool in self._custom_tools.values():
+            tool.set_api_key(api.key)
 
     def _on_connect_fail(self, error: str):
         self._sidebar.show_error(error)
