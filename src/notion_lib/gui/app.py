@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
 
 from notion_lib.gui.state import get_state, reset_state
 from notion_lib.gui.workers import (
-    ConnectWorker, LoadSchemaWorker, LoadEntriesWorker,
+    ConnectWorker, LoadSchemaWorker, LoadEntriesWorker, LoadPageTodosWorker,
     RunWorker, CreateRepeatedBlocksWorker, RunRadioTodoWorker,
 )
 from notion_lib.gui.logic.codegen import generate
@@ -125,6 +125,7 @@ class MainWindow(QMainWindow):
         self._repeat_tool.run_requested.connect(self._on_repeat_run)
         self._radio_todo_tool.schema_needed.connect(self._on_schema_needed)
         self._radio_todo_tool.entries_needed.connect(self._on_entries_needed)
+        self._radio_todo_tool.page_todos_needed.connect(self._on_page_todos_needed)
         self._radio_todo_tool.generate_requested.connect(self._on_radio_todo_generate)
         self._radio_todo_tool.run_requested.connect(self._on_radio_todo_run)
         # Collega il tasto + della home
@@ -237,6 +238,8 @@ class MainWindow(QMainWindow):
         self._copy_tool.populate_datasources(datasources)
         self._repeat_tool.populate_datasources(datasources)
         self._radio_todo_tool.populate_datasources(datasources)
+        pages_list = sorted(pages.values(), key=lambda p: (p.get("title") or "").lower())
+        self._radio_todo_tool.populate_pages(pages_list)
         self._tabs.setEnabled(True)
         self._status.showMessage(
             f"Connesso come {bot_name}  ·  "
@@ -311,6 +314,25 @@ class MainWindow(QMainWindow):
 
     def _on_entries_fail(self, ds_id: str, error: str):
         self._status.showMessage(f"Errore caricamento entry: {error}")
+
+    def _on_page_todos_needed(self, page_id: str):
+        state = get_state()
+        if not state.api or not page_id:
+            return
+
+        w = LoadPageTodosWorker(state.api, page_id)
+        w.success.connect(self._on_page_todos_ok)
+        w.failure.connect(self._on_page_todos_fail)
+        w.finished.connect(lambda worker=w: self._cleanup_worker(worker))
+        self._workers.append(w)
+        w.start()
+
+    def _on_page_todos_ok(self, page_id: str, todos: list):
+        self._radio_todo_tool.update_page_todos(page_id, todos)
+        self._status.showMessage(f"Checkbox To-Do caricate: {len(todos)}")
+
+    def _on_page_todos_fail(self, page_id: str, error: str):
+        self._status.showMessage(f"Errore caricamento checkbox pagina: {error}")
 
     # ══════════════════════════════════════════════════════════════
     # CopyDatasource tool — genera e esegui
@@ -644,7 +666,7 @@ class MainWindow(QMainWindow):
 
         code = generate_radio_todo_code(
             cfg=cfg,
-            ds_label=ds_label(cfg["ds_id"]),
+            target_label=self._radio_todo_tool.selected_target_label() if cfg.get("mode") == "page" else ds_label(cfg["ds_id"]),
             entry_label=self._radio_todo_tool.selected_entry_label(),
         )
         self._radio_todo_tool.set_code(code)

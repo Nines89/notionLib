@@ -63,6 +63,25 @@ class LoadEntriesWorker(QThread):
             self.failure.emit(self._ds_id, str(e))
 
 
+class LoadPageTodosWorker(QThread):
+    """Carica i blocchi To-Do di una pagina per selezione in UI."""
+    success = pyqtSignal(str, list)   # page_id, todos
+    failure = pyqtSignal(str, str)    # page_id, errore
+
+    def __init__(self, api, page_id: str):
+        super().__init__()
+        self._api = api
+        self._page_id = page_id
+
+    def run(self):
+        try:
+            from notion_lib.gui.logic.radio_todo_runner import list_page_todos
+            todos = list_page_todos(self._api, self._page_id)
+            self.success.emit(self._page_id, todos)
+        except Exception as e:
+            self.failure.emit(self._page_id, str(e))
+
+
 class RunWorker(QThread):
     """Esegue l'automazione (lettura, filtro, ordinamento, scrittura)."""
     success = pyqtSignal(list)   # righe di log
@@ -182,20 +201,20 @@ class CreateRepeatedBlocksWorker(QThread):
         self._api = api
         self._cfg = cfg
 
-    def _build_titles(self):
+    def _build_title_items(self):
         mode = self._cfg.get("mode", "range")
         if mode == "custom":
             titles = self._cfg.get("custom_titles") or []
             if not titles:
                 raise ValueError("Nessun titolo inserito in modalità lista personalizzata.")
-            return titles
+            return [(i, title) for i, title in enumerate(titles, start=1)]
 
         template = self._cfg.get("title_template") or "Pagina {index}"
         start = int(self._cfg.get("start_index") or 1)
         total = int(self._cfg.get("count") or 1)
         out = []
         for idx in range(start, start + total):
-            out.append(template.format(index=idx, title=""))
+            out.append((idx, template.format(index=idx, title="")))
         return out
 
     @staticmethod
@@ -204,8 +223,11 @@ class CreateRepeatedBlocksWorker(QThread):
 
     def _build_blocks(self, blueprint: list, index: int, title: str):
         from notion_lib.nModels.blocks.heading import Heading1, Heading2, Heading3
+        from notion_lib.nModels.blocks.list_blocks import ToDo, BulletedListItem, NumberedListItem, Toggle
         from notion_lib.nModels.blocks.paragraph import ParagraphBlock
+        from notion_lib.nModels.blocks.special_blocks import DividerBlock, CalloutBlock, BreadcrumbBlock, QuoteBlock
         from notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
+        from notion_lib.nTypes.icons import NEmoji
         from notion_lib.nTypes.rich_text import simple_rich_text_list
 
         blocks = []
@@ -221,18 +243,40 @@ class CreateRepeatedBlocksWorker(QThread):
                 blocks.append(Heading3.create(text=text))
             elif btype == "paragraph":
                 blocks.append(ParagraphBlock.create(text=text))
+            elif btype == "to_do":
+                blocks.append(ToDo.create(text=text, checked=bool(item.get("checked", False))))
+            elif btype == "bulleted_list_item":
+                blocks.append(BulletedListItem.create(text=text))
+            elif btype == "numbered_list_item":
+                blocks.append(NumberedListItem.create(text=text))
+            elif btype == "toggle":
+                blocks.append(Toggle.create(text=text))
+            elif btype == "divider":
+                blocks.append(DividerBlock.create())
+            elif btype == "callout":
+                blocks.append(CalloutBlock.create(text=text, icon=NEmoji({"emoji": "💡"})))
+            elif btype == "breadcrumb":
+                blocks.append(BreadcrumbBlock.create())
+            elif btype == "quote":
+                blocks.append(QuoteBlock.create(text=text))
             elif btype == "table":
                 columns = item.get("columns") or ["Col 1", "Col 2"]
                 rows = int(item.get("rows", 1))
+                has_row_header = bool(item.get("has_row_header", False))
+                row_header_values = item.get("row_header_values") or []
                 header = TableRowBlock.create(cells=[simple_rich_text_list(str(c)) for c in columns])
-                body_rows = [
-                    TableRowBlock.create(cells=[simple_rich_text_list("") for _ in columns])
-                    for _ in range(max(1, rows))
-                ]
+                total_rows = max(1, rows, len(row_header_values) if has_row_header else 0)
+                body_rows = []
+                for r_idx in range(total_rows):
+                    cells = [simple_rich_text_list("") for _ in columns]
+                    if has_row_header and cells:
+                        label = row_header_values[r_idx] if r_idx < len(row_header_values) else ""
+                        cells[0] = simple_rich_text_list(self._render_text(str(label), index, title))
+                    body_rows.append(TableRowBlock.create(cells=cells))
                 blocks.append(TableBlock.create(
                     table_width=len(columns),
                     has_column_header=True,
-                    has_row_header=False,
+                    has_row_header=has_row_header,
                     cells=[header] + body_rows,
                 ))
         return blocks
@@ -245,24 +289,24 @@ class CreateRepeatedBlocksWorker(QThread):
 
             ds = DataSourceFactory.find(self._api.headers, self._cfg["target_id"])
             title_prop = self._cfg["title_prop"]
-            titles = self._build_titles()
+            title_items = self._build_title_items()
 
             raw_blueprint = self._cfg.get("blocks_blueprint") or "[]"
             blueprint = json.loads(raw_blueprint)
             if not isinstance(blueprint, list):
                 raise ValueError("Il blueprint JSON deve essere una lista di blocchi.")
 
-            for i, title in enumerate(titles, start=1):
+            for index, title in title_items:
                 props = {
                     title_prop: {"title": [{"text": {"content": title}}]}
                 }
                 page = ds.create_entry(properties=props)
-                blocks = self._build_blocks(blueprint, index=i, title=title)
+                blocks = self._build_blocks(blueprint, index=index, title=title)
                 if blocks:
                     page.append_children(blocks)
                 log.append(f"✓ Creata pagina {title} ({len(blocks)} blocchi)")
 
-            log.append(f"✓ Completato: create {len(titles)} pagine.")
+            log.append(f"✓ Completato: create {len(title_items)} pagine.")
             self.success.emit(log)
         except Exception as e:
             self.failure.emit(str(e))
@@ -280,13 +324,20 @@ class RunRadioTodoWorker(QThread):
 
     def run(self):
         try:
-            from notion_lib.gui.logic.radio_todo_runner import run_radio_todo
-            log = run_radio_todo(
-                api=self._api,
-                ds_id=self._cfg["ds_id"],
-                todo_prop=self._cfg["todo_prop"],
-                selected_entry_id=self._cfg["entry_id"],
-            )
+            from notion_lib.gui.logic.radio_todo_runner import run_radio_todo, run_radio_todo_page
+            if self._cfg.get("mode") == "page":
+                log = run_radio_todo_page(
+                    api=self._api,
+                    page_id=self._cfg["page_id"],
+                    selected_block_id=self._cfg["todo_block_id"],
+                )
+            else:
+                log = run_radio_todo(
+                    api=self._api,
+                    ds_id=self._cfg["ds_id"],
+                    todo_prop=self._cfg["todo_prop"],
+                    selected_entry_id=self._cfg["entry_id"],
+                )
             self.success.emit(log)
         except Exception as e:
             self.failure.emit(str(e))
