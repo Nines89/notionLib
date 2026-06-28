@@ -12,11 +12,11 @@ def check_url_or_id(url_or_id: str) -> str:
         return url_or_id
 
     pattern = re.compile(
-        r"#([0-9a-f]{32})"
-        r"|notion\.so/[A-Za-z0-9_-]+-([0-9a-f]{32})"
-        r"|notion\.so/([0-9a-f]{32})",
-        re.IGNORECASE
-    )
+            r"#([0-9a-f]{32})"
+            r"|app.notion\.com/p/[A-Za-z0-9_-]+-([0-9a-f]{32})"
+            r"|app.notion\.com/p/([0-9a-f]{32})",
+            re.IGNORECASE
+        )
 
     matches = pattern.findall(url_or_id)
     if not matches:
