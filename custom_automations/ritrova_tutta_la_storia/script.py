@@ -27,6 +27,7 @@ from notion_lib.nTypes.icons import NEmoji
 
 class RitrovaTuttaLaStoria:
     """Automazione personalizzata: Ritrova tutta la storia"""
+    PAGE = "https://app.notion.com/p/Timelines-2df9b4f7b3cd80da88efc8a3c2923ebb"
 
     def __init__(self, api_key: str):
         self.api = NotionApiClient(key=api_key)
@@ -34,7 +35,8 @@ class RitrovaTuttaLaStoria:
     def run(self):
         """Logica principale dell'automazione. Modifica questo metodo."""
         print(f"Avvio: {self.__class__.__name__}")
-
+        page = PageFactory.find(self.api.headers, self.PAGE)
+        print(page.title)
         
 
         # ── Esempio: carica un DataSource ───────────────────────────────

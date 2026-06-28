@@ -1036,7 +1036,7 @@ if __name__ == "__main__":
     # example_readonly_blocks()
     # example_meeting_notes()
     # example_simple_page()
-    # example_database_page()
+    example_database_page()
     # example_page_factory_routing()
     # example_database()
     # example_datasource()
