@@ -19,6 +19,7 @@ def register_block(block_type: str):
         return cls
     return wrapper
 
+_REGISTRY_POPULATED = False
 
 def _ensure_registry_populated():
     global _REGISTRY_POPULATED

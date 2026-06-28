@@ -14,7 +14,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 
-notion_lib.utils.constants import NColors, NLanguage
+from notion_lib.utils.constants import NColors, NLanguage
 
 
 # ─── Helper: tipo blocco ──────────────────────────────────────────
@@ -167,8 +167,8 @@ class _LoadBlocksWorker(QThread):
 
     def run(self):
         try:
-            notion_lib.nEndpoints.pages import get_block_children
-            notion_lib.nModels.blocks.base_block import BlockFactory, _ensure_registry_populated
+            from notion_lib.nEndpoints.pages import get_block_children
+            from notion_lib.nModels.blocks.base_block import BlockFactory, _ensure_registry_populated
 
             _ensure_registry_populated()
             raw_blocks = get_block_children(self._headers, self._page_id)
@@ -211,7 +211,7 @@ class _AppendBlockWorker(QThread):
 
     def run(self):
         try:
-            notion_lib.nEndpoints.blocks import append_children
+            from notion_lib.nEndpoints.blocks import append_children
             append_children(
                 self._headers,
                 self._page_id,
@@ -326,7 +326,7 @@ class _CalloutForm(QWidget):
         self._icon = QLineEdit()
         self._icon.setMaximumWidth(70)
         try:
-            notion_lib.nTypes.icons import NEmoji
+            from notion_lib.nTypes.icons import NEmoji
             if isinstance(block.icon, NEmoji):
                 self._icon.setText(block.icon.emoji or "")
         except Exception:
@@ -361,7 +361,7 @@ class _CalloutForm(QWidget):
         block._color = self._color.currentData()
         emoji_text = self._icon.text().strip()
         if emoji_text:
-            notion_lib.nTypes.icons import NEmoji
+            from notion_lib.nTypes.icons import NEmoji
             block.icon = NEmoji({"type": "emoji", "emoji": emoji_text})
 
 
@@ -555,7 +555,7 @@ class _MediaForm(QWidget):
 
     def apply_to_block(self, block):
         if self._is_external and self._url:
-            notion_lib.nTypes.files import FileTypeExternal
+            from notion_lib.nTypes.files import FileTypeExternal
             url = self._url.text().strip()
             if url:
                 block.file_object = FileTypeExternal(url)
@@ -939,7 +939,7 @@ class PageBlocksDialog(QDialog):
                 item.widget().deleteLater()
 
     def _on_add_block(self):
-        notion_lib.gui.widgets.block_insert_dialog import InsertBlockDialog
+        from notion_lib.gui.widgets.block_insert_dialog import InsertBlockDialog
         dialog = InsertBlockDialog(self.windowTitle(), parent=self)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
