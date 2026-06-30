@@ -3,6 +3,8 @@ gui/app.py
 MainWindow — finestra principale.
 Assembla sidebar + tabs, gestisce workers, coordina i componenti.
 NON contiene logica di business.
+
+MODIFICA: collegato AutomationsTab.custom_deleted -> CustomAutomationManager.delete()
 """
 
 from PyQt6.QtWidgets import (
@@ -48,7 +50,7 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
-        # ── Sidebar (di nuovo a sinistra) ─────────────────────────
+        # ── Sidebar ────────────────────────────────────────────────
         self._sidebar = SidebarWidget()
         self._sidebar.connect_requested.connect(self._on_connect)
         self._sidebar.disconnect_requested.connect(self._on_disconnect)
@@ -79,18 +81,18 @@ class MainWindow(QMainWindow):
         self._ws_tab.action_open_datasource.connect(self._on_open_datasource)
         self._tabs.addTab(self._ws_tab, "  🪐 Panorama  ")
 
-        # Tab 2: Automazioni (con tile + stack interno)
+        # Tab 2: Automazioni
         self._auto_tab = AutomationsTab()
         self._tabs.addTab(self._auto_tab, "  🤖 Flussi  ")
 
-        # Registra i tool nell'AutomationsTab
+        # Registra i tool built-in
         self._copy_tool = CopyDatasourceTool()
         self._auto_tab.register_tool(
             icon="🧠",
             title="Sync DataSource",
             description="Trasforma e sincronizza record tra due datasource con filtri avanzati e mapping intelligente.",
-            gradient_start="#6366F1",  # ← NUOVO: indigo
-            gradient_end="#8B5CF6",  # ← NUOVO: purple
+            gradient_start="#6366F1",
+            gradient_end="#8B5CF6",
             tool_widget=self._copy_tool,
         )
 
@@ -141,8 +143,12 @@ class MainWindow(QMainWindow):
         self._prune_old_tool.schema_needed.connect(self._on_schema_needed)
         self._prune_old_tool.generate_requested.connect(self._on_prune_old_generate)
         self._prune_old_tool.run_requested.connect(self._on_prune_old_run)
-        # Collega il tasto + della home
+
+        # Tasto + della home → apre dialog creazione automazione custom
         self._auto_tab.set_add_custom_callback(self._on_add_custom_requested)
+        # Eliminazione automazione custom (da tile o da header tool)
+        self._auto_tab.custom_deleted.connect(self._on_custom_deleted)
+
         # Carica le automazioni custom salvate
         self._load_custom_automations()
 
@@ -151,9 +157,9 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self._status)
         self._status.showMessage("Inserisci la chiave API per iniziare.")
 
-        # ══════════════════════════════════════════════════════════════
-        # Custom Automations
-        # ══════════════════════════════════════════════════════════════
+    # ══════════════════════════════════════════════════════════════
+    # Custom Automations
+    # ══════════════════════════════════════════════════════════════
 
     def _load_custom_automations(self):
         """Carica dal manifest e registra tutte le automazioni custom salvate."""
@@ -162,8 +168,9 @@ class MainWindow(QMainWindow):
 
     def _register_custom_entry(self, entry: dict):
         """
-        Crea il CustomAutomationTool, lo registra nel tab e lo salva
-        in self._custom_tools per propagare la api_key in seguito.
+        Crea il CustomAutomationTool, lo registra nel tab (con supporto
+        eliminazione) e lo salva in self._custom_tools per propagare
+        la api_key in seguito.
         """
         tool = CustomAutomationTool(
             slug=entry["slug"],
@@ -171,7 +178,6 @@ class MainWindow(QMainWindow):
             script_path=entry["script_path"],
         )
 
-        # Se l'utente è già connesso, inietta subito la chiave
         state = get_state()
         if state.api:
             tool.set_api_key(state.api.key)
@@ -207,22 +213,40 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(
                 self, "Errore",
-                f"Impossibile salvare l\'automazione:\\n{e}"
+                f"Impossibile salvare l'automazione:\n{e}"
             )
             return
 
         self._register_custom_entry(entry)
         self._status.showMessage(
-            f"Automazione \'{cfg['name']}\' creata. "
+            f"Automazione '{cfg['name']}' creata. "
             f"Script: {entry['script_path']}"
         )
         QMessageBox.information(
             self,
             "Automazione creata",
-            f"✓  \'{cfg['name']}\' è stata aggiunta alla home.\\n\\n"
-            f"Il template si trova in:\\n{entry['script_path']}\\n\\n"
-            f"Aprilo con \'Apri con editor\' dentro la tile per modificarlo.",
+            f"✓  '{cfg['name']}' è stata aggiunta alla home.\n\n"
+            f"Il template si trova in:\n{entry['script_path']}\n\n"
+            f"Aprilo con 'Apri con editor' dentro la tile per modificarlo.",
         )
+
+    def _on_custom_deleted(self, slug: str):
+        """
+        Slot collegato a AutomationsTab.custom_deleted.
+        A questo punto la UI (tile + stack widget) è già stata ripulita
+        da AutomationsTab; qui rimuoviamo solo lo stato applicativo:
+        manifest su disco e dizionario interno dei tool.
+        """
+        deleted = self._custom_manager.delete(slug)
+        self._custom_tools.pop(slug, None)
+
+        if deleted:
+            self._status.showMessage(f"Automazione '{slug}' eliminata.")
+        else:
+            self._status.showMessage(
+                f"Automazione '{slug}' rimossa dall'interfaccia "
+                f"(non trovata nel manifest)."
+            )
 
     # ══════════════════════════════════════════════════════════════
     # Connessione
@@ -259,7 +283,6 @@ class MainWindow(QMainWindow):
             f"Connesso come {bot_name}  ·  "
             f"{len(pages)} pagine, {len(databases)} database, {len(datasources)} datasource"
         )
-        # Precarica i primi 2 schemi in background
         for ds in datasources[:2]:
             self._start_schema_load(api, ds["id"])
         for tool in self._custom_tools.values():
@@ -287,7 +310,6 @@ class MainWindow(QMainWindow):
     def _start_schema_load(self, api, ds_id: str):
         state = get_state()
         if ds_id in state.ds_schemas:
-            # Schema già in cache: aggiorna subito i tool
             self._copy_tool.update_schema(ds_id, state.ds_schemas[ds_id])
             self._repeat_tool.update_schema(ds_id, state.ds_schemas[ds_id])
             self._radio_todo_tool.update_schema(ds_id, state.ds_schemas[ds_id])
@@ -432,7 +454,6 @@ class MainWindow(QMainWindow):
     # ══════════════════════════════════════════════════════════════
 
     def _on_insert_block_requested(self, page_id: str):
-        """Mostra dialog per inserire un blocco nella pagina."""
         state = get_state()
         page_info = state.pages.get(page_id.replace("-", ""))
         page_title = page_info.get("title", "Pagina") if page_info else "Pagina"
@@ -484,7 +505,6 @@ class MainWindow(QMainWindow):
         if not state.api:
             return
 
-        # Cerca info datasource
         ds_info = next(
             (ds for ds in state.datasources if ds["id"] == ds_id.replace("-", "")),
             None,
@@ -500,23 +520,19 @@ class MainWindow(QMainWindow):
             ds_id=ds_id,
             ds_name=ds_name,
             headers=state.api.headers,
-            schema=schema,  # None → il worker lo carica internamente
+            schema=schema,
             parent=self,
         )
         dialog.exec()
 
-        # Aggiorna cache schema se il worker l'ha caricato (schema era None)
-        # Il worker espone schema via il segnale success; qui lo recuperiamo
-        # direttamente dal DataSourceFactory dopo che il dialog è chiuso
-        # solo se non era già in cache.
         if not schema and state.api:
             self._start_schema_load(state.api, ds_id)
+
     # ══════════════════════════════════════════════════════════════
     # Create DataSource
     # ══════════════════════════════════════════════════════════════
 
     def _on_create_datasource_requested(self, db_id: str):
-        """Mostra dialog per creare un datasource."""
         state = get_state()
         db_info = state.databases.get(db_id.replace("-", ""))
         db_title = db_info.get("title", "Database") if db_info else "Database"
@@ -547,8 +563,6 @@ class MainWindow(QMainWindow):
     def _on_create_datasource_ok(self, ds_id: str, msg: str):
         self._status.showMessage(msg)
         QMessageBox.information(self, "Successo", msg)
-
-        # Ricarica workspace per mostrare il nuovo datasource
         self._refresh_workspace()
 
     def _on_create_datasource_fail(self, error: str):
@@ -556,7 +570,6 @@ class MainWindow(QMainWindow):
         QMessageBox.critical(self, "Errore", f"Impossibile creare il datasource:\n{error}")
 
     def _refresh_workspace(self):
-        """Ricarica i dati del workspace."""
         state = get_state()
         if not state.api:
             return
@@ -574,10 +587,8 @@ class MainWindow(QMainWindow):
     # ══════════════════════════════════════════════════════════════
 
     def _on_create_ds_entry_requested(self, ds_id: str):
-        """Mostra dialog per creare una entry nel datasource."""
         state = get_state()
 
-        # Cerca info datasource
         ds_info = None
         for ds in state.datasources:
             if ds["id"] == ds_id.replace("-", ""):
@@ -590,7 +601,6 @@ class MainWindow(QMainWindow):
 
         ds_name = ds_info["name"]
 
-        # Verifica se schema è in cache
         if ds_id not in state.ds_schemas:
             self._on_schema_needed(ds_id)
             QMessageBox.information(
