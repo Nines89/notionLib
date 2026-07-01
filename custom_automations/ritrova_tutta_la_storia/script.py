@@ -65,7 +65,7 @@ class RitrovaTuttaLaStoria:
 
 
 if __name__ == "__main__":
-    key = os.environ.get("NOTION_KEY") or "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"
+    key = os.environ.get("NOTION_KEY") or input("API Key: ")
     if not key:
         print("Errore: nessuna API key fornita.")
         sys.exit(1)

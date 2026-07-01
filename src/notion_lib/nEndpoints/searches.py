@@ -29,15 +29,3 @@ def search_by_title(headers,
     return NPOST(header=headers, url=f"{BASE}", data=payload)
 
 
-if __name__ == "__main__":
-    from notion_lib.client.auth import NotionApiClient
-
-    api = NotionApiClient(key="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")
-    query_ = "Auto"
-    s = search_by_title(api.headers, query_, filters='page', sorts='ascending')
-    for ss in s['results']:
-        print(ss['object'])
-
-    s = search_by_title(api.headers, query_, filters='data_source', sorts='ascending')
-    for ss in s['results']:
-        print(ss['object'])

@@ -143,33 +143,3 @@ class DatabaseFactory:
         db = NDatabase(headers, db_id)
         db._apply(data)
         return db
-
-# ──────────────────────────────────────────────
-# Test manuale
-# ──────────────────────────────────────────────
-
-if __name__ == "__main__":
-    from notion_lib.client.auth import NotionApiClient
-
-    api = NotionApiClient(key="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")
-
-    db_url = "https://www.notion.so/2a7b7a8f729481919ac9c1853a813571?v=2a7b7a8f7294819bb426000cf2da4ff8&source=copy_link"
-
-    db = DatabaseFactory.find(api.headers, db_url)
-    print(db)
-    print("Titolo:", db.title)
-    print("Inline:", db.is_inline)
-    print("Locked:", db.is_locked)
-
-
-    print("\nDataSources:")
-    for ds in db.datasources:
-        print(" ", ds)
-
-    # Aggiornamento
-    # db.title = "Titolo aggiornato"
-    # db.update()
-    #
-    # # Crea un DS figlio
-    # new_ds = db.create_datasource("Nuovo DS", prop_schema={"url": "Link", "number": "Score"})
-    # print("Creato:", new_ds)

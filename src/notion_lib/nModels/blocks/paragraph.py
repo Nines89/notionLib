@@ -59,29 +59,3 @@ class ParagraphBlock(BlockImpl):
         self._color = value.value
 
 
-
-if __name__ == "__main__":
-    from notion_lib.client.auth import NotionApiClient
-    from notion_lib.nModels.blocks.base_block import NFactory
-
-    api = NotionApiClient(key="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")
-    obj_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f729481078b12e5862da8ce76"
-
-    # Partendo da un paragrafo bianco, vuoto, normale
-    # cambiamo il testo
-    # cambiamo il colore di sfondo
-    # aggiungiamo un figlio
-    # leggiamo tutti i figli
-
-    blk = NFactory.find(api.headers, obj_id)
-    print(blk.to_payload())
-    blk.rich_text = "Abbiamo un cambiamento netto!2"
-    blk.color = NColors.BLUE_BACKGROUND
-    print(blk.to_payload())
-    child = ParagraphBlock.create("Un paragrafo figlio")
-    child2 = ParagraphBlock.create("Un secondo paragrafo figlio")
-    children = [child, child2]
-    blk.update()
-    blk.append_children(children)
-
-    print(blk.get_children())

@@ -4,8 +4,8 @@ sys.path.insert(0, "")
 from notion_lib.client.auth import NotionApiClient
 from notion_lib.nEndpoints.blocks import get_block_children
 
-API_KEY = "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"
-BLK_MEETING = "325b7a8f72948037bc72dfd0a8726941"
+API_KEY = "<YOUR_API_KEY>"
+BLK_MEETING = "<YOUR_BLK_MEETING_ID>"
 
 api = NotionApiClient(key=API_KEY)
 

@@ -125,26 +125,3 @@ class NDEL(NotionSession):
         self.response = self.request("DELETE", url=url)
 
 
-if __name__ == '__main__':
-    from auth import NotionApiClient
-
-    api = NotionApiClient(key="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")
-
-    block_id = "2a7b7a8f72948113b82cef011fbc7fd1"
-    block_id_up = "332b7a8f729480388444e0ce5586639a"
-
-    url_get = f"https://api.notion.com/v1/blocks/{block_id}"
-    url_up_del = f"https://api.notion.com/v1/blocks/{block_id_up}"
-
-    req = NGET(url_get, api.headers)
-
-    req_update = NPATCH(url_up_del, api.headers, {
-        "to_do": {
-            "rich_text": [{
-                "text": {"content": "try hard"}
-            }],
-            "checked": True
-        }
-    })
-
-    req_delete = NDEL(url_up_del, api.headers)

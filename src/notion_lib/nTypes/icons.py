@@ -91,7 +91,7 @@ class NIcon:
 
     @property
     def color(self) -> str:
-        return self.name
+        return self._color
 
     @color.setter
     def color(self, value: str):

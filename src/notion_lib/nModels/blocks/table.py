@@ -156,39 +156,4 @@ class TableBlock(BlockImpl):
         return  None
 
 
-if __name__ == "__main__":
-    import sys
-    import os
-
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../")))
-    from notion_lib.client.auth import NotionApiClient
-    from notion_lib.nModels.blocks.base_block import NFactory
-
-    api = NotionApiClient(key="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")
-
-    obj_toggle = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#304b7a8f729480ff8cccedd17c271fd9"
-    father = NFactory.find(api.headers, obj_toggle)
-
-    obj_table = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#31cb7a8f729480a79acdd38d9ccae328"
-
-    children = []
-    table_blk = NFactory.find(api.headers, obj_table)
-    print(table_blk.to_payload())
-    table_blk.has_column_header = True
-    table_blk.has_row_header = False
-
-    cell_to_read = (1, 1)
-    print(table_blk.cell(*cell_to_read))
-    print(table_blk[1, 1])
-
-    table_blk[1, 1] = "mod obj"
-    table_blk.update()
-
-    rows = []
-    for ro in range(1, 3):
-        rows.append(TableRowBlock.create([simple_rich_text_list(f"tit {ro} 1"),
-                                          simple_rich_text_list(f"tit {ro} 2")]))
-
-    table = TableBlock.create(2, False, True, cells=rows)
-    father.append_children([table])
 

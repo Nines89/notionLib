@@ -76,7 +76,7 @@ class _LoadEntriesWorker(QThread):
 
     def run(self):
         try:
-            notion_lib.nModels.datasources import DataSourceFactory
+            from notion_lib.nModels.datasources import DataSourceFactory
             ds = DataSourceFactory.find(self._headers, self._ds_id)
             schema = self._schema or ds.schema
             entries = ds.all_entries()
@@ -359,7 +359,7 @@ class DataSourceTableDialog(QDialog):
                 item.setForeground(QColor(color))
 
         # Popola righe
-        notion_lib.gui.logic.runner import extract_value
+        from notion_lib.gui.logic.runner import extract_value
 
         self._table.setRowCount(len(entries))
 
@@ -416,7 +416,7 @@ class DataSourceTableDialog(QDialog):
         first_cell = self._table.item(row, 0)
         page_title = first_cell.text() if first_cell else page_id
 
-        notion_lib.gui.widgets.page_blocks_dialog import PageBlocksDialog
+        from notion_lib.gui.widgets.page_blocks_dialog import PageBlocksDialog
         dialog = PageBlocksDialog(
             page_id=page_id,
             page_title=page_title,

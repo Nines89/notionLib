@@ -83,36 +83,6 @@ def move_db(headers, db_id_to_move, new_parent_id):
             "type": f"{parents_type}_id" if parents_type != 'workspace' else parents_type,
         }
     }
-    payload['parent'][f"{parents_type}_id" if parents_type != 'workaspace' else parents_type]\
-        = parent_id if parents_type != 'workaspace' else True
+    payload['parent'][f"{parents_type}_id" if parents_type != 'workspace' else parents_type]\
+        = parent_id if parents_type != 'workspace' else True
     return NPATCH(header=headers, url=f"{BASE}/{db_id}", data=payload)
-
-
-if __name__ == "__main__":
-    from notion_lib.client.auth import NotionApiClient
-
-    api = NotionApiClient(key="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")
-    pg_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7"
-    data_id = "https://www.notion.so/ad506059a56f4626b7a4c4ee5a1f4430?v=e589b1d587604016ba6e9b840da871b3&source=copy_link"
-    #################### CREATE DB EXAMPLE ######################################
-    # create_db(api.headers, title='DB di prova 2', parent_id=pg_id, prop_schema={
-    #     'select': 'Selezione'})
-    #################### Move DB EXAMPLE ######################################
-    # move_to_id = "https://www.notion.so/MovedDB-2beb7a8f72948045ae64e4f68dce154c"
-    # data_id_to_move = \
-    #     "https://www.notion.so/52f90e2979fc4bf09f72b852fe7be569?v=1429cbc075874ff7bb0aa44624ee76ce&source=copy_link"
-    # move_db(api.headers, data_id_to_move, move_to_id)
-    #################### Update DB EXAMPLE ######################################
-    # data_id_to_up = \
-    #     "https://www.notion.so/52f90e2979fc4bf09f72b852fe7be569?v=1429cbc075874ff7bb0aa44624ee76ce&source=copy_link"
-    # update_db(api.headers, data_id_to_up, title="DB TITLE UPDATED", is_locked=True, is_inline=False)
-    # time.sleep(2)
-    # update_db(api.headers, data_id_to_up, in_trash=True)
-    # time.sleep(2)
-    # update_db(api.headers, data_id_to_up, in_trash=False)
-    ################### DataSourceList ##############################################à
-    container = 'https://www.notion.so/ad506059a56f4626b7a4c4ee5a1f4430?v=2c0b7a8f72948138abfb000c106f95fd&source=copy_link'
-    a = get_db_datasources(api.headers, container)
-    for el in a:
-        print(el['name'],' -> ',el['id'])
-    pass

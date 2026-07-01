@@ -37,18 +37,3 @@ def create_comment(headers,
     }
     return NPOST(header=headers, url=f"{BASE}", data=payload)
 
-
-if __name__ == "__main__":
-    from notion_lib.client.auth import NotionApiClient
-    api = NotionApiClient(key="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")
-    blk_id = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f729481f2a917e1c673fb8cf4"
-    #################### CREATE COMMENT EXAMPLE ######################################
-    # create_comment(api.headers, blk_id, "Secondo comment")
-    #################### GET ALL COMMENTS EXAMPLE ######################################
-    # cmts = get_all_comments(api.headers, blk_id)
-    # print(cmts['results'])
-    # print(len(cmts['results']))
-    #################### GET COMMENT EXAMPLE ######################################
-    cmt_id = '2c3b7a8f-7294-81ab-9365-001de10989fc'
-    cmt = get_comment(api.headers, cmt_id)
-    print(cmt)

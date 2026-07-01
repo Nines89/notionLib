@@ -7,7 +7,7 @@ Nessuna dipendenza da PyQt6.
 import sys
 sys.path.insert(0, "")
 
-notion_lib.gui.constants import NO_VALUE_OPS
+from notion_lib.gui.constants import NO_VALUE_OPS
 
 
 # ── Estrazione valore da una entry grezza ────────────────────────────────────
@@ -72,7 +72,7 @@ def build_filter(filter_rows: list, schema: dict):
     Converte una lista di FilterRow in un filtro Notion.
     Restituisce None se non ci sono filtri.
     """
-    notion_lib.nTypes.ds_filters import F
+    from notion_lib.nTypes.ds_filters import F
     conds = []
 
     for row in filter_rows:
@@ -110,7 +110,7 @@ def build_filter(filter_rows: list, schema: dict):
         return None
     if len(conds) == 1:
         return conds[0]
-    notion_lib.nTypes.ds_filters import F as _F
+    from notion_lib.nTypes.ds_filters import F as _F
     return _F.and_(*conds)
 
 
@@ -127,7 +127,7 @@ def run_automation(api, src_id: str, tgt_id: str,
       3. Scrive nella destinazione (con mapping colonne)
     Restituisce una lista di righe di log leggibili.
     """
-    notion_lib.nModels.datasources import DataSourceFactory
+    from notion_lib.nModels.datasources import DataSourceFactory
     log = []
 
     try:

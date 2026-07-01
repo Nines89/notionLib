@@ -10,7 +10,7 @@ Esecuzione
 ----------
     cd <root del progetto>
     python examples.py
-
+è
 Struttura
 ---------
   1.  Auth & client
@@ -48,56 +48,56 @@ from notion_lib.client.auth import NotionApiClient
 # CONFIG — sostituisci con la tua chiave se necessario
 # ─────────────────────────────────────────────────────────────────────────────
 
-API_KEY = "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"
+API_KEY = "<YOUR_API_KEY>"
 
 # Pagina principale usata come parent/container negli esempi
-PAGE_URL      = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7"
-PAGE_ID       = "2a7b7a8f729480b3b420f8736c4116d7"
+PAGE_URL      = "<YOUR_PAGE_URL>"
+PAGE_ID       = "<YOUR_PAGE_ID>"
 
 # Database e DataSource
-DB_URL        = "https://www.notion.so/2a7b7a8f729481919ac9c1853a813571?v=2a7b7a8f7294819bb426000cf2da4ff8&source=copy_link"
-DB_CONTAINER  = "https://www.notion.so/ad506059a56f4626b7a4c4ee5a1f4430?v=e589b1d587604016ba6e9b840da871b3&source=copy_link"
-DS_URL        = "https://www.notion.so/2c0b7a8f72948024a529f2a82e767024?v=2c0b7a8f72948174811f000c8c4bab20&source=copy_link"
+DB_URL        = "<YOUR_DB_URL>"
+DB_CONTAINER  = "<YOUR_DB_URL>"
+DS_URL        = "<YOUR_DS_URL>"
 
 # DatabasePage (entry in un DataSource)
-DB_PAGE_URL   = "https://www.notion.so/New-Title-2-The-revenge-2a7b7a8f729481ffadcfe600364f3fd4?source=copy_link"
+DB_PAGE_URL   = "<YOUR_DB_URL>"
 
 # Pagina semplice (parent = page)
-SIMPLE_PAGE   = "https://www.notion.so/Amleto-aggiornato-via-API-2a7b7a8f7294814596c1dd2c262ffed7"
+SIMPLE_PAGE   = "<YOUR_PAGE_URL>"
 
 # Blocchi specifici sulla pagina di integrazione
 _BASE = PAGE_URL + "?source=copy_link#"
 
-BLK_PARAGRAPH  = _BASE + "2a7b7a8f729481078b12e5862da8ce76"
-BLK_H1         = _BASE + "2a7b7a8f7294814297b9cc59924601e3"
-BLK_H2         = _BASE + "2a7b7a8f729481f2a917e1c673fb8cf4"
-BLK_H3         = _BASE + "2a7b7a8f72948193860fc75f7b83d099"
-BLK_TODO       = _BASE + "2a7b7a8f729481c18d4cd0ed0e447f68"
-BLK_TOGGLE     = _BASE + "2a7b7a8f729481529995ce46b59b34c5"
-BLK_BULLET     = _BASE + "334b7a8f7294801f9418fb4c06a0c87d"
-BLK_NUMBER     = _BASE + "2a7b7a8f7294814da22cea8f62aed209"
-BLK_IMAGE      = _BASE + "2a7b7a8f729481e6b128c8ffeaa62669"
-BLK_FILE       = _BASE + "2fbb7a8f7294807ca2c0fde21cc2b968"
-BLK_EMBED      = _BASE + "2fbb7a8f72948021a338ef1ea3216203"
-BLK_TABLE      = _BASE + "31cb7a8f729480a79acdd38d9ccae328"
-BLK_TOGGLE_FATHER = _BASE + "304b7a8f729480ff8cccedd17c271fd9"
-BLK_CALLOUT    = _BASE + "2a7b7a8f729481b4957be14adb7d707f"
-BLK_SYNCED_F   = _BASE + "2fcb7a8f72948076861afbb4aefa6490"
-BLK_BREADCRUMB = _BASE + "2a7b7a8f729481ce9154c80df1008698"
-BLK_CHILD_PAGE = "https://www.notion.so/Is-it-a-child-page-2a7b7a8f7294814596c1dd2c262ffed7?source=copy_link"
-BLK_CHILD_DB   = "https://www.notion.so/2a7b7a8f729481919ac9c1853a813571?v=2a7b7a8f7294819bb426000cf2da4ff8&source=copy_link"
-BLK_CODE       = _BASE + "2a7b7a8f729481d48f7af478566b8bb2"
-BLK_EQUATION   = _BASE + "2a7b7a8f7294815bad7ee297d18a8c34"
-BLK_BOOKMARK   = _BASE + "2a7b7a8f729481a88bb8f028e919c93f"
-BLK_COLUMN     = _BASE + "304b7a8f729480cc8ae9f786a0b05d79"
-BLK_DIVIDER    = _BASE + "305b7a8f729480dc80bfd914821b79c9"
-BLK_QUOTE      = _BASE + "322b7a8f7294802fba7af54ca8f03d78"
-BLK_TOC        = _BASE + "325b7a8f729480e1b401f81fb5c311da"
-BLK_MEETING    = _BASE + "325b7a8f72948037bc72dfd0a8726941"
+BLK_PARAGRAPH  = _BASE + "<YOUR_BLK_ID>"
+BLK_H1         = _BASE + "<YOUR_BLK_ID>"
+BLK_H2         = _BASE + "<YOUR_BLK_ID>"
+BLK_H3         = _BASE + "<YOUR_BLK_ID>"
+BLK_TODO       = _BASE + "<YOUR_BLK_ID>"
+BLK_TOGGLE     = _BASE + "<YOUR_BLK_ID>"
+BLK_BULLET     = _BASE + "<YOUR_BLK_ID>"
+BLK_NUMBER     = _BASE + "<YOUR_BLK_ID>"
+BLK_IMAGE      = _BASE + "<YOUR_BLK_ID>"
+BLK_FILE       = _BASE + "<YOUR_BLK_ID>"
+BLK_EMBED      = _BASE + "<YOUR_BLK_ID>"
+BLK_TABLE      = _BASE + "<YOUR_BLK_ID>"
+BLK_TOGGLE_FATHER = _BASE + "<YOUR_BLK_ID>"
+BLK_CALLOUT    = _BASE + "<YOUR_BLK_ID>"
+BLK_SYNCED_F   = _BASE + "<YOUR_BLK_ID>"
+BLK_BREADCRUMB = _BASE + "<YOUR_BLK_ID>"
+BLK_CHILD_PAGE = "<YOUR_PAGE_ID>"
+BLK_CHILD_DB   = "<YOUR_DB_ID>"
+BLK_CODE       = _BASE + "<YOUR_BLK_ID>"
+BLK_EQUATION   = _BASE + "<YOUR_BLK_ID>"
+BLK_BOOKMARK   = _BASE + "<YOUR_BLK_ID>"
+BLK_COLUMN     = _BASE + "<YOUR_BLK_ID>"
+BLK_DIVIDER    = _BASE + "<YOUR_BLK_ID>"
+BLK_QUOTE      = _BASE + "<YOUR_BLK_ID>"
+BLK_TOC        = _BASE + "<YOUR_BLK_ID>"
+BLK_MEETING    = _BASE + "<YOUR_BLK_ID>"
 
 # Users
-USER_PERSON_ID = "8711f079-8ae4-4748-89a7-d2daf31ff8fe"
-USER_BOT_ID    = "9816fe23-bc82-4025-aa43-76789960e89a"
+USER_PERSON_ID = "<YOUR_USER_ID>"
+USER_BOT_ID    = "<YOUR_BOT_ID>"
 
 
 def sep(title: str):

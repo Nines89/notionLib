@@ -49,16 +49,3 @@ def is_there_more(response: dict) -> bool:
     """Controlla se la risposta paginata ha ulteriori risultati."""
     return bool(response.get("has_more", False))
 
-
-if __name__ == "__main__":
-    from notion_lib.client.auth import NotionApiClient
-
-    api = NotionApiClient(key="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")
-
-    page_id = "2a7b7a8f729480b3b420f8736c4116d7"
-    db_id = "2a7b7a8f7294801ab914e1f063fab45a"
-    blk_id = "2a7b7a8f729481c2997effc3c4da56ce"
-    page_from_ws_id = "28bb7a8f729480bca147c206032d9273"
-
-    parent_type = find_parent_type(api.headers, blk_id)
-    print(parent_type)

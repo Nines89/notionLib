@@ -142,11 +142,3 @@ class UserFactory:
         u._raw_data = data
         return u
 
-if __name__ == "__main__":
-    from notion_lib.client.auth import NotionApiClient
-
-    api = NotionApiClient(key="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")
-    blockId = "8711f079-8ae4-4748-89a7-d2daf31ff8fe"
-
-    user = UserFactory.create(api.headers, blockId)
-    print(user)

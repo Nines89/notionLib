@@ -93,36 +93,3 @@ class Heading2(BaseHeading):
 class Heading3(BaseHeading):
     block_type = "heading_3"
 
-
-if __name__ == "__main__":
-    from notion_lib.client.auth import NotionApiClient
-    from notion_lib.nModels.blocks.base_block import NFactory
-
-    api = NotionApiClient(key="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")
-    obj_h1 = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f7294814297b9cc59924601e3"
-    obj_h2 = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f729481f2a917e1c673fb8cf4"
-    obj_h3 = "https://www.notion.so/color-A2DCEE-textbf-API-Integration-2a7b7a8f729480b3b420f8736c4116d7?source=copy_link#2a7b7a8f72948193860fc75f7b83d099"
-
-    # Partendo da un paragrafo bianco, vuoto, normale
-    # cambiamo il testo
-    # cambiamo il colore di sfondo
-    # aggiungiamo un figlio
-    # leggiamo tutti i figli
-
-    child = Heading3.create("Title Child for H2")
-    children = [child]
-
-    blk_h1 = NFactory.find(api.headers, obj_h1)
-    blk_h1.rich_text = "Title 1 Bis"
-    blk_h1.color = NColors.BLUE_BACKGROUND
-    blk_h1.update()
-    blk_h1.append_children(children)
-
-    blk_h2 = NFactory.find(api.headers, obj_h2)
-    blk_h2.is_toggleable = True
-    blk_h2.update()
-    blk_h2.append_children(children)
-    print(blk_h2.get_children())
-    print("--------------------------------------------------------------------------------------------------")
-    blk_h3 = NFactory.find(api.headers, obj_h3)
-    print(blk_h3.to_payload())
