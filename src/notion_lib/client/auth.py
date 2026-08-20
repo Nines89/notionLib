@@ -14,7 +14,7 @@ class NotionApiClient:
 
     def __setattr__(self, name: str, value):
         if name in self._IMMUTABLE:
-            raise AttributeError(f"'{name}' è immutabile dopo l'inizializzazione.")
+            raise AttributeError(f"'{name}' is immutable after the init.")
         super().__setattr__(name, value)
 
     def __repr__(self):

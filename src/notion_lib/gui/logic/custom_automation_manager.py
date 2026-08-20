@@ -2,29 +2,56 @@
 gui/logic/custom_automation_manager.py
 
 Responsabilità:
-  - persistenza delle automazioni custom in custom_automations/manifest.json
+  - persistenza delle automazioni custom in una cartella dati utente stabile
   - generazione del template Python a partire dalla selezione degli oggetti
   - CRUD base (save, load_all, delete)
 
-Struttura su disco:
-  custom_automations/
+Struttura su disco (indipendente dalla cwd):
+  <user_data>/notion-lib/custom_automations/
   ├── manifest.json                   ← lista di tutti i metadata
   └── <slug>/
       └── script.py                   ← codice dell'automazione
+
+Override: variabile d'ambiente NOTION_LIB_DATA_DIR (usa <dir>/custom_automations).
 """
 
 from __future__ import annotations
 
 import json
+import os
 import re
+import shutil
 import sys
 from pathlib import Path
 from typing import Optional
 
 
-# ── Costanti ──────────────────────────────────────────────────────────────────
+# ── Path risoluzione ─────────────────────────────────────────────────────────
 
-ROOT = Path("custom_automations")
+def default_custom_automations_root() -> Path:
+    """
+    Cartella stabile per le automazioni custom (non dipende dalla cwd).
+
+    Windows : %LOCALAPPDATA%/notion-lib/custom_automations
+    macOS   : ~/Library/Application Support/notion-lib/custom_automations
+    Linux   : $XDG_DATA_HOME/notion-lib/custom_automations
+              (default ~/.local/share/...)
+    """
+    override = os.environ.get("NOTION_LIB_DATA_DIR")
+    if override:
+        return Path(override).expanduser().resolve() / "custom_automations"
+
+    if sys.platform == "win32":
+        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
+
+    return (base / "notion-lib" / "custom_automations").resolve()
+
+
+ROOT = default_custom_automations_root()
 MANIFEST = ROOT / "manifest.json"
 
 # Tutti gli oggetti importabili offerti all'utente nella checklist.
@@ -255,14 +282,15 @@ class CustomAutomationManager:
         "description":    str,
         "gradient_start": str,   # hex color
         "gradient_end":   str,   # hex color
-        "script_path":    str,   # path relativo allo script
+        "script_path":    str,   # path assoluto allo script
     }
     """
 
     def __init__(self, root: Optional[Path] = None):
-        self._root = Path(root) if root else ROOT
+        self._root = Path(root).resolve() if root else default_custom_automations_root()
         self._root.mkdir(parents=True, exist_ok=True)
         self._manifest_path = self._root / "manifest.json"
+        self._migrate_legacy_if_needed()
 
     # ── CRUD ──────────────────────────────────────────────────────
 
@@ -272,9 +300,21 @@ class CustomAutomationManager:
             return []
         try:
             data = json.loads(self._manifest_path.read_text(encoding="utf-8"))
-            # Filtra entry con script mancante su disco
-            return [e for e in data if Path(e["script_path"]).exists()]
-        except (json.JSONDecodeError, KeyError):
+            resolved: list[dict] = []
+            changed = False
+            for entry in data:
+                script = self._resolve_script_path(entry.get("script_path", ""), entry.get("slug", ""))
+                if not script.exists():
+                    continue
+                abs_path = str(script.resolve())
+                if entry.get("script_path") != abs_path:
+                    entry = {**entry, "script_path": abs_path}
+                    changed = True
+                resolved.append(entry)
+            if changed:
+                self._write_manifest(resolved)
+            return resolved
+        except (json.JSONDecodeError, KeyError, TypeError):
             return []
 
     def save(
@@ -294,7 +334,7 @@ class CustomAutomationManager:
         slug = self._unique_slug(name)
         script_dir = self._root / slug
         script_dir.mkdir(parents=True, exist_ok=True)
-        script_path = script_dir / "script.py"
+        script_path = (script_dir / "script.py").resolve()
 
         # Genera e salva il template
         code = generate_template(name, selected_objects)
@@ -327,7 +367,7 @@ class CustomAutomationManager:
         script = Path(to_delete["script_path"])
         if script.exists():
             script.unlink()
-        if script.parent.exists() and not any(script.parent.iterdir()):
+        if script.parent.exists() and script.parent != self._root and not any(script.parent.iterdir()):
             script.parent.rmdir()
 
         # Aggiorna manifest
@@ -342,6 +382,89 @@ class CustomAutomationManager:
         return Path(entry["script_path"]) if entry else None
 
     # ── Helpers privati ───────────────────────────────────────────
+
+    def _resolve_script_path(self, script_path: str, slug: str) -> Path:
+        """Risolve path assoluti, relativi alla root dati, o legacy cwd-relative."""
+        path = Path(script_path) if script_path else Path()
+        if path.is_absolute() and path.exists():
+            return path
+        candidates = [
+            self._root / slug / "script.py" if slug else Path(),
+            self._root / path if not path.is_absolute() else path,
+            Path.cwd() / path if not path.is_absolute() else path,
+        ]
+        for candidate in candidates:
+            if candidate and candidate.exists():
+                return candidate
+        return self._root / slug / "script.py" if slug else path
+
+    def _legacy_root(self) -> Path:
+        """Vecchia cartella relativa alla cwd (pre-fix distributable)."""
+        return Path.cwd() / "custom_automations"
+
+    def _manifest_has_entries(self) -> bool:
+        if not self._manifest_path.exists():
+            return False
+        try:
+            data = json.loads(self._manifest_path.read_text(encoding="utf-8"))
+            return bool(data)
+        except (json.JSONDecodeError, OSError):
+            return False
+
+    def _migrate_legacy_if_needed(self) -> None:
+        """
+        Copia one-shot da ./custom_automations (cwd) alla cartella dati utente
+        se la destinazione non ha ancora entry valide.
+        """
+        if self._manifest_has_entries():
+            return
+
+        legacy = self._legacy_root()
+        legacy_manifest = legacy / "manifest.json"
+        if not legacy_manifest.exists():
+            return
+        # Evita di "migrare" verso se stessi
+        try:
+            if legacy.resolve() == self._root:
+                return
+        except OSError:
+            return
+
+        try:
+            data = json.loads(legacy_manifest.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return
+        if not isinstance(data, list) or not data:
+            return
+
+        migrated: list[dict] = []
+        for entry in data:
+            slug = entry.get("slug")
+            if not slug:
+                continue
+            src_script = Path(entry.get("script_path", ""))
+            if not src_script.is_absolute():
+                src_script = Path.cwd() / src_script
+            if not src_script.exists():
+                alt = legacy / slug / "script.py"
+                if alt.exists():
+                    src_script = alt
+                else:
+                    continue
+
+            dest_dir = self._root / slug
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest_script = (dest_dir / "script.py").resolve()
+            if src_script.resolve() != dest_script:
+                shutil.copy2(src_script, dest_script)
+
+            migrated.append({
+                **entry,
+                "script_path": str(dest_script),
+            })
+
+        if migrated:
+            self._write_manifest(migrated)
 
     def _write_manifest(self, entries: list[dict]) -> None:
         self._manifest_path.write_text(

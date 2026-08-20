@@ -1,21 +1,65 @@
-import requests
+import os
+import time
 from functools import lru_cache
 
 import certifi
+import requests
+from requests.exceptions import ConnectionError as RequestsConnectionError
+from requests.exceptions import SSLError, Timeout
 
 from notion_lib.client.errors import ERROR_MAP, NotionError
 from notion_lib.client.rate_limit import handle_rate_limit
 
+_TRANSIENT = (SSLError, RequestsConnectionError, Timeout)
+_MAX_ATTEMPTS = 5
+
+
+def _verify_arg():
+    """
+    Resolve SSL verification.
+
+    - NOTION_SSL_VERIFY=0|false|off  → disable verification (last resort)
+    - REQUESTS_CA_BUNDLE / SSL_CERT_FILE / CURL_CA_BUNDLE → custom CA file
+    - otherwise certifi CA bundle
+    """
+    flag = os.environ.get("NOTION_SSL_VERIFY", "1").strip().lower()
+    if flag in ("0", "false", "no", "off"):
+        return False
+    for key in ("REQUESTS_CA_BUNDLE", "SSL_CERT_FILE", "CURL_CA_BUNDLE"):
+        path = os.environ.get(key)
+        if path and os.path.isfile(path):
+            return path
+    return certifi.where()
+
+
+def _raw_request(method: str, url: str, headers: dict, json=None, params=None):
+    last_exc = None
+    for attempt in range(_MAX_ATTEMPTS):
+        try:
+            return requests.request(
+                method,
+                url,
+                headers=headers,
+                json=json,
+                params=params,
+                timeout=30,
+                verify=_verify_arg(),
+            )
+        except _TRANSIENT as exc:
+            last_exc = exc
+            if attempt + 1 >= _MAX_ATTEMPTS:
+                break
+            time.sleep(0.4 * (2 ** attempt))
+    raise last_exc
+
 
 @lru_cache(maxsize=2048)
 def _cached_get(url: str, headers_key: tuple, params_key: tuple):
-    return requests.request(
+    return _raw_request(
         "GET",
         url,
         headers=dict(headers_key),
         params=dict(params_key) if params_key else None,
-        timeout=10,
-        verify=certifi.where()
     )
 
 
@@ -45,14 +89,12 @@ class NotionSession:
                     tuple(sorted((params or {}).items()))
                 )
             else:
-                r = requests.request(
+                r = _raw_request(
                     method,
                     url,
                     headers=self.headers,
                     json=json,
                     params=params,
-                    timeout=10,
-                    verify=certifi.where()
                 )
             if r.status_code == 429:
                 handle_rate_limit(r)
@@ -123,5 +165,3 @@ class NDEL(NotionSession):
         # Le DELETE mutano dati: invalida la cache
         invalidate_cache()
         self.response = self.request("DELETE", url=url)
-
-

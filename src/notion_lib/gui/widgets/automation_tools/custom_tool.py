@@ -134,12 +134,17 @@ class CustomAutomationTool(QWidget):
         open_btn.setFixedHeight(34)
         open_btn.clicked.connect(self._open_in_editor)
 
+        folder_btn = QPushButton("📁 Open in folder")
+        folder_btn.setFixedHeight(34)
+        folder_btn.clicked.connect(self._open_in_folder)
+
         import_btn = QPushButton("↑ Sostituisci script")
         import_btn.setFixedHeight(34)
         import_btn.clicked.connect(self._import_script)
 
         pr.addWidget(self._path_lbl, stretch=1)
         pr.addWidget(open_btn)
+        pr.addWidget(folder_btn)
         pr.addWidget(import_btn)
         info_card.add_content(path_row)
         cl.addWidget(info_card)
@@ -257,6 +262,27 @@ class CustomAutomationTool(QWidget):
             subprocess.run(["open", str(path)])
         else:
             subprocess.run(["xdg-open", str(path)])
+
+    def _open_in_folder(self):
+        """Open the script's parent folder in the system file manager."""
+        path = Path(self._script_path).resolve()
+        folder = path.parent if path.exists() else path.parent
+        if not folder.exists():
+            QMessageBox.warning(self, "Folder not found", str(folder))
+            return
+        if sys.platform == "win32":
+            # Select the file in Explorer when it exists
+            if path.exists():
+                subprocess.run(["explorer", "/select,", str(path)])
+            else:
+                os.startfile(str(folder))
+        elif sys.platform == "darwin":
+            if path.exists():
+                subprocess.run(["open", "-R", str(path)])
+            else:
+                subprocess.run(["open", str(folder)])
+        else:
+            subprocess.run(["xdg-open", str(folder)])
 
     def _import_script(self):
         """Sostituisce lo script corrente con un file selezionato dall'utente."""

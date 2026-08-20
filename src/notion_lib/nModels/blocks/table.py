@@ -152,7 +152,10 @@ class TableBlock(BlockImpl):
     def __setitem__(self, item, value):
         if isinstance(item, tuple):
             r, c = item
-            self._cells[r-1]._cells[c-1] = simple_rich_text_list(value) # noqa
+            try:
+                self._cells[r-1]._cells[c-1] = simple_rich_text_list(value) # noqa
+            except IndexError:
+                raise IndexError(f"Row {r} or cell {c} are out of range")
         return  None
 
 

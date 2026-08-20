@@ -91,8 +91,9 @@ class BlockImpl(ABC):
     def get_children(self) -> list:
         if not self.supports_children:
             raise TypeError(f"'{self.type}' non supporta children.")
+        # Children payload already contains full block objects — no re-fetch.
         return [
-            NFactory.find(self.headers, blk['id'])
+            NFactory.from_raw(self.headers, blk)
             for blk in get_block_children(self.headers, self.block_id)
         ]
 
@@ -141,6 +142,13 @@ class BlockFactory:
 
 
 class NFactory:
+    @staticmethod
+    def from_raw(headers, data: dict):
+        """Build a block impl from an already-fetched Notion block payload."""
+        _ensure_registry_populated()
+        block_id = data.get("id") or check_url_or_id(data.get("url", ""))
+        return BlockFactory.from_data(headers, data, block_id)
+
     @staticmethod
     def find(headers, block_id):
         _ensure_registry_populated()

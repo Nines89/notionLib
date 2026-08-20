@@ -79,6 +79,8 @@ class BaseHeading(BlockImpl):
         self._is_toggleable = value
         if self.is_toggleable:
             self.supports_children = True
+        else:
+            self.supports_children = False
 
 
 @register_block("heading_1")

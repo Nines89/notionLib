@@ -5,6 +5,7 @@ from notion_lib.utils.constants import NColors
 
 
 class ParagraphLike(BlockImpl):
+    type = "paragraph"
     block_type = "paragraph_like"
     supports_children = False
 

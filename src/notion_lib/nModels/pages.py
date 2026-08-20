@@ -72,7 +72,8 @@ class NPage(NObj):
     def get_children(self) -> list:
         from notion_lib.nModels.blocks.base_block import NFactory
         raw_blocks = get_block_children(self.headers, self.obj_id)
-        return [NFactory.find(self.headers, blk["id"]) for blk in raw_blocks]
+        # Children list already has full block payloads — avoid N+1 get_block calls.
+        return [NFactory.from_raw(self.headers, blk) for blk in raw_blocks]
 
     def append_children(self, children: list) -> list:
         payload = [child.to_payload() for child in children]
