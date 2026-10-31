@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 notion-gui = "notion_lib.notion_gui:main"
+notion-folder = "notion_lib.open_automations:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

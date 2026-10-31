@@ -54,7 +54,8 @@ Da quel momento il nuovo comando e' disponibile da terminale.
 
 | Comando terminale  | File                                      | Funzione |
 |--------------------|-------------------------------------------|----------|
-| notion-gui         | src/notion_lib/notion_gui.py              | main()   |
+| notion-gui          | src/notion_lib/notion_gui.py              | main()   |
+| notion-automations  | src/notion_lib/open_automations.py        | main()   |
 | notion-sync        | src/notion_lib/automazioni/sync.py        | main()   |
 | notion-export      | src/notion_lib/automazioni/export.py      | main()   |
 | notion-report      | src/notion_lib/automazioni/report.py      | main()   |

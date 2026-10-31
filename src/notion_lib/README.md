@@ -78,6 +78,7 @@ python -c "from notion_lib import NFactory, PageFactory"
 | Universale, da cartella `src/notion_lib` | `python notion_gui.py` | funziona sempre |
 | Universale, con pacchetto installato | `python -m notion_lib.notion_gui` | |
 | Entry point CLI (richiede `pip install -e .`) | `notion-gui` | su Windows, se non riconosciuto, aggiungi al PATH `C:\Users\<utente>\AppData\Roaming\Python\Python312\Scripts`, oppure esegui `pip install -e .` da PowerShell come amministratore |
+| Entry point CLI | `notion-automations` | apre la cartella dati utente delle automazioni custom nel file manager (`%LOCALAPPDATA%\notion-lib\custom_automations` su Windows) |
 
 ---
 
