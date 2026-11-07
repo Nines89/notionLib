@@ -8,6 +8,7 @@ from notion_lib.nEndpoints.pages import (
     trash_page,
     restore_page,
     get_block_children,
+    get_page_property_items,
 )
 from notion_lib.nEndpoints.blocks import append_children as _append_children
 from notion_lib.nTypes.icons import IconFactory
@@ -206,6 +207,16 @@ class DatabasePage(NPage):
     def set_prop(self, name: str, value) -> "DatabasePage":
         self.prop(name).value = value
         return self
+
+    def get_prop_items(self, name: str) -> list[dict]:
+        """Fetch all API items for a property, including paginated values.
+
+        Notion may truncate title, rich_text, people, relation, and rollup
+        values in the page response. This method retrieves the complete value
+        using the property's stable ID.
+        """
+        prop = self.prop(name)
+        return get_page_property_items(self.headers, self.obj_id, prop.prop_id)
 
     def title(self) -> str:
         self._ensure_data()

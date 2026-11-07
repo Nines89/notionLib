@@ -383,10 +383,10 @@ class PeopleProperty(PropertyValue):
 
 
 # ──────────────────────────────────────────────
-# Read-only
+# Writable and read-only
 # ──────────────────────────────────────────────
 
-class FilesProperty(ReadOnlyProperty):
+class FilesProperty(PropertyValue):
     prop_type = "files"
 
     def __init__(self, name: str, prop_id: str, data: dict):
@@ -400,6 +400,13 @@ class FilesProperty(ReadOnlyProperty):
     @property
     def value(self) -> list:
         return self._files
+
+    @value.setter
+    def value(self, files: list):
+        self._files = list(files)
+
+    def to_payload(self) -> dict:
+        return {self.name: {"files": self._files}}
 
 
 class FormulaProperty(ReadOnlyProperty):
@@ -538,11 +545,10 @@ class LastEditedByProperty(ReadOnlyProperty):
 # Tipi mancanti (prima causavano ValueError nel registry)
 # ──────────────────────────────────────────────
 
-class VerificationProperty(ReadOnlyProperty):
+class VerificationProperty(PropertyValue):
     """
     Stato di verifica di una pagina.
     Valori possibili: "verified", "unverified".
-    Non modificabile via API.
     """
     prop_type = "verification"
 
@@ -558,16 +564,25 @@ class VerificationProperty(ReadOnlyProperty):
         return cls(name, prop_id, data)
 
     @property
-    def value(self) -> Optional[str]:
-        return self._state
-
-    @property
     def verified_by(self) -> Optional[str]:
         return self._verified_by
 
     @property
     def date(self) -> Optional[NDate]:
         return self._date
+
+    @property
+    def value(self) -> Optional[str]:
+        return self._state
+
+    @value.setter
+    def value(self, state: Optional[str]):
+        self._state = state
+
+    def to_payload(self) -> dict:
+        if self._state not in ("verified", "unverified"):
+            raise ValueError("verification value must be 'verified' or 'unverified'.")
+        return {self.name: {"verification": {"state": self._state}}}
 
 
 class ButtonProperty(ReadOnlyProperty):
@@ -615,9 +630,13 @@ class LocationProperty(ReadOnlyProperty):
         return self._longitude
 
 
-class PlaceProperty(ReadOnlyProperty):
-    """Proprietà di tipo place. Read-only."""
+class PlaceProperty(PropertyValue):
+    """Place value with coordinates and optional place details."""
     prop_type = "place"
+
+    def __init__(self, name: str, prop_id: str, data: dict):
+        super().__init__(name, prop_id, data)
+        self._value = data.get("place")
 
     @classmethod
     def from_data(cls, name: str, prop_id: str, data: dict):
@@ -625,7 +644,14 @@ class PlaceProperty(ReadOnlyProperty):
 
     @property
     def value(self):
-        return self._data.get("place")
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
+
+    def to_payload(self) -> dict:
+        return {self.name: {"place": self._value}}
 
 
 class LastVisitedTimeProperty(ReadOnlyProperty):

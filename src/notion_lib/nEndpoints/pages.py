@@ -100,6 +100,31 @@ def get_page_property(headers, page_id, property_id):
     return NGET(header=headers, url=f"{BASE}/{page_id}/properties/{property_id}")
 
 
+def get_page_property_items(headers, page_id, property_id) -> list[dict]:
+    """Return every item for a page property, following Notion pagination."""
+    page_id = check_url_or_id(page_id)
+    url = f"{BASE}/{page_id}/properties/{property_id}"
+    items = []
+    cursor = None
+
+    while True:
+        params = {"start_cursor": cursor} if cursor else None
+        response = NGET(header=headers, url=url, params=params).response
+        if "results" not in response:
+            # Scalar properties are represented by a single property_item.
+            return [response]
+
+        items.extend(response["results"])
+        if not response.get("has_more"):
+            return items
+        cursor = response.get("next_cursor")
+        if not cursor:
+            raise ValueError(
+                f"Notion indicated more values for property '{property_id}' "
+                "without providing a next_cursor."
+            )
+
+
 def update_page(headers, page_id, payload):
     page_id = check_url_or_id(page_id)
     return NPATCH(header=headers, url=f"{BASE}/{page_id}", data=payload)

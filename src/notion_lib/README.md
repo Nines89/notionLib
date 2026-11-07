@@ -446,10 +446,132 @@ Metodi comuni a ogni blocco: `.update()`, `.delete()`, `.get_children()` (se `su
 | `IconFactory` / `NEmoji` / `NIcon` / `NCustomEmoji` | routing icona pagina/blocco |
 | `PropertyFactory` | routing proprietà pagina database verso la sottoclasse tipizzata corretta |
 
-**Proprietà scrivibili**: `title`, `rich_text`, `number`, `checkbox`, `select`, `multi_select`, `status`, `date`, `url`, `email`, `phone_number`, `relation`, `people`.
-**Proprietà read-only**: `files`, `formula`, `rollup`, `unique_id`, `created_time`, `last_edited_time`, `created_by`, `last_edited_by`, `verification`, `button`, `location`, `place`, `last_visited_time`.
+**Scrivibili via API**: `title`, `rich_text`, `number`, `checkbox`, `select`, `multi_select`, `status`, `date`, `url`, `email`, `phone_number`, `relation`, `people`, `files`, `verification`, `place`.
+**Sola lettura**: `formula`, `rollup`, `unique_id`, `created_time`, `last_edited_time`, `created_by`, `last_edited_by`, `button`, `location`, `last_visited_time`.
 
-`DatabasePage.to_payload()` scarta automaticamente le proprietà read-only, quindi `.update()` è sicuro anche su pagine con colonne calcolate.
+`DatabasePage.to_payload()` omette i tipi read-only e include tutte le proprietà scrivibili della pagina. Gli array inviati a Notion sostituiscono l'intero valore della proprietà. Per modificare una sola proprietà senza riscrivere le altre, usa `update_page`; è particolarmente importante per `people`, `relation`, `files` e valori paginati, perché la risposta standard della pagina può contenerne solo una parte. In alternativa, recupera gli item completi e reinvia tutti i valori da conservare. La documentazione Notion descrive i formati e i limiti di scrittura dei [valori delle proprietà pagina](https://developers.notion.com/reference/page-property-values).
+
+### Esempi page properties
+
+Le proprietà appartengono allo **schema del DataSource**. Per una riga esistente, `DatabasePage.properties` restituisce i value object tipizzati, `page.prop(nome)` restituisce una proprietà e `page.set_prop(nome, valore)` ne cambia il valore in memoria. Le modifiche diventano effettive su Notion con `page.update()`.
+
+```python
+from notion_lib.nModels.datasources import DataSourceFactory
+from notion_lib.nModels.pages import PageFactory
+
+ds = DataSourceFactory.find(api.headers, "DATA_SOURCE_ID")
+
+# Crea una colonna nello schema; il tipo deve essere un tipo schema supportato da Notion.
+ds.add_property("number", "Punteggio")
+
+# Crea una nuova riga. Il payload properties usa il nome della colonna e la chiave del tipo.
+page = ds.create_entry({
+    "Name": {"title": [{"text": {"content": "Prova page properties"}}]},
+    "Punteggio": {"number": 10},
+})
+
+# Leggi/modifica/aggiorna una riga esistente.
+page = PageFactory.find(api.headers, page.obj_id)
+print(page.properties)                # dict[str, PropertyValue]
+print(page.prop("Punteggio").value)  # 10
+page.set_prop("Punteggio", 11).update()
+```
+
+La tabella riassume tutti i tipi nel registry. “Payload creazione” è il valore da includere in `properties` quando crei una riga; i tipi read-only sono calcolati o assegnati da Notion. Per aggiornare usa i valori Python della colonna dedicata e poi `page.update()`. Per `date`, assegna `.start`/`.end`: `DateProperty.value` è in sola lettura. Per `title` e `rich_text`, usa il payload raw mostrato dopo la tabella per svuotare il testo (la stringa vuota del wrapper non produce l'array vuoto richiesto dall'API).
+
+| Tipo | Valore Python per modifica | Payload creazione (valore) | Cancellazione/svuotamento valore |
+|---|---|---|---|
+| `title` | `"Nuovo titolo"` | `{"title": [{"text": {"content": "Titolo"}}]}` | Raw API: `{"title": []}` |
+| `rich_text` | `"Testo aggiornato"` | `{"rich_text": [{"text": {"content": "Testo"}}]}` | Raw API: `{"rich_text": []}` |
+| `number` | `12.5` | `{"number": 12.5}` | `None` |
+| `checkbox` | `True` | `{"checkbox": true}` | `False` (deseleziona) |
+| `select` | `"In corso"` | `{"select": {"name": "In corso"}}` | `None` |
+| `multi_select` | `["Urgente", "Bug"]` | `{"multi_select": [{"name": "Urgente"}, {"name": "Bug"}]}` | `[]` |
+| `status` | `"Done"` | `{"status": {"name": "Done"}}` | `None` (resetta al default, se presente) |
+| `date` | `NDate("2026-12-31")` su `.start` | `{"date": {"start": "2026-12-31"}}` | `.start = None` |
+| `url` | `"https://example.com"` | `{"url": "https://example.com"}` | `None` |
+| `email` | `"nome@example.com"` | `{"email": "nome@example.com"}` | `None` |
+| `phone_number` | `"+39 02 123456"` | `{"phone_number": "+39 02 123456"}` | `None` |
+| `relation` | `["RELATED_PAGE_ID"]` | `{"relation": [{"id": "RELATED_PAGE_ID"}]}` | `[]` |
+| `people` | `["NOTION_USER_ID"]` | `{"people": [{"id": "NOTION_USER_ID"}]}` | `[]` |
+| `files` | lista di file esterni/upload già completati | `{"files": [{"name": "brief.pdf", "type": "external", "external": {"url": "https://example.com/brief.pdf"}}]}` | `[]` |
+| `formula` | — (sola lettura) | Il risultato lo calcola Notion | — |
+| `rollup` | — (sola lettura) | Il risultato lo calcola Notion | — |
+| `unique_id` | — (sola lettura) | Lo assegna Notion | — |
+| `created_time` | — (sola lettura) | Lo assegna Notion | — |
+| `last_edited_time` | — (sola lettura) | Lo assegna Notion | — |
+| `created_by` | — (sola lettura) | Lo assegna Notion | — |
+| `last_edited_by` | — (sola lettura) | Lo assegna Notion | — |
+| `verification` | `"verified"` o `"unverified"` | `{"verification": {"state": "unverified"}}` | `"unverified"` |
+| `button` | — (sola lettura) | Notion restituisce `{}` | — |
+| `location` | — (sola lettura) | Non supportato in scrittura | — |
+| `place` | `{"lat": 45.4642, "lon": 9.19, "name": "Milano"}` | `{"place": {"lat": 45.4642, "lon": 9.19, "name": "Milano"}}` | `None` |
+| `last_visited_time` | — (sola lettura) | Lo assegna Notion | — |
+
+Esempio completo per date, relazione, persone, file e luogo:
+
+```python
+from notion_lib.nTypes.primitives import NDate
+
+page.prop("Scadenza").start = NDate("2026-12-31")
+page.prop("Scadenza").end = NDate("2027-01-02")  # facoltativo, intervallo
+page.set_prop("Progetti", ["RELATED_PAGE_ID"])
+page.set_prop("Assegnatari", ["NOTION_USER_ID"])
+page.set_prop("Allegati", [{
+    "name": "brief.pdf",
+    "type": "external",
+    "external": {"url": "https://example.com/brief.pdf"},
+}])
+page.set_prop("Luogo", {"lat": 45.4642, "lon": 9.19, "name": "Milano"})
+page.update()
+```
+
+Per leggere i valori tipizzati e gli elementi restituiti dall'endpoint paginato:
+
+```python
+page = PageFactory.find(api.headers, "PAGE_ID")
+tags = page.prop("Tag")
+print(tags.value)                         # ad esempio ["Urgente", "Bug"]
+complete_items = page.get_prop_items("Assegnatari")
+print(complete_items)                     # tutti gli item, pagine incluse
+```
+
+Per `title` e `rich_text`, svuota l'array con l'endpoint raw `update_page`. Per gli altri valori, invia il valore di cancellazione della tabella nel payload `update_page`; puoi usare `page.update()` se intendi riscrivere tutte le proprietà scrivibili della pagina.
+
+```python
+from notion_lib.nEndpoints.pages import update_page
+
+# Pulisce il rich text usando il payload vuoto richiesto da Notion.
+update_page(api.headers, page.obj_id, {
+    "properties": {"Descrizione": {"rich_text": []}}
+})
+page = PageFactory.find(api.headers, page.obj_id)  # ricarica il valore
+```
+
+**Cancellazione del valore** svuota una cella in una pagina. **Rimozione della proprietà** elimina la colonna dallo schema e impatta tutto il DataSource e le sue pagine.
+
+```python
+from notion_lib.nEndpoints.pages import update_page
+
+# Svuota il contenuto di una proprietà in questa pagina.
+update_page(api.headers, page.obj_id, {
+    "properties": {"Punteggio": {"number": None}}
+})
+
+# Modifica solo una proprietà e lascia intatte le altre colonne.
+update_page(api.headers, page.obj_id, {
+    "properties": {"Punteggio": {"number": 12}}
+})
+page = PageFactory.find(api.headers, page.obj_id)
+
+# Rimuove la colonna dallo schema del DataSource (azione distruttiva).
+ds.remove_property("Punteggio")  # accetta anche l'ID della proprietà
+
+# Elimina la pagina spostandola nel cestino (distinto dalla proprietà).
+page.trash()
+```
+
+La creazione di una proprietà calcolata o gestita da Notion dipende dalla configurazione schema del DataSource; i valori `formula`, `rollup`, ID, date di audit, autori e `button` vengono letti dall'API e non impostati sulle pagine.
 
 ---
 

@@ -25,6 +25,7 @@ Struttura
   10. Blocks — meeting_notes
   11. Pages — SimplePage (read, update, children)
   12. Pages — DatabasePage (read, typed props, update)
+  12b. Page properties (read, update, clear, schema removal)
   13. Pages — PageFactory routing
   14. Databases — NDatabase (read, update, datasources)
   15. DataSources — NDataSource (filter, sort, schema, entries)
@@ -34,7 +35,7 @@ Struttura
   19. Search
   20. Comments
 """
-
+import os
 import sys
 
 from notion_lib.nModels import ParagraphBlock
@@ -48,7 +49,6 @@ from notion_lib.client.auth import NotionApiClient
 # CONFIG — sostituisci con la tua chiave se necessario
 # ─────────────────────────────────────────────────────────────────────────────
 
-API_KEY = "<YOUR_API_KEY>"
 
 # Pagina principale usata come parent/container negli esempi
 PAGE_URL      = "<YOUR_PAGE_URL>"
@@ -61,6 +61,17 @@ DS_URL        = "<YOUR_DS_URL>"
 
 # DatabasePage (entry in un DataSource)
 DB_PAGE_URL   = "<YOUR_DB_URL>"
+
+# Prove manuali delle page properties: inserisci nomi/valori reali e abilita
+# esplicitamente le operazioni mutanti prima di eseguirle.
+PROPERTY_PAGE_URL = "https://app.notion.com/p/prima-pagina-411b7a8f729480b7bd95c008e7e7f3d2?source=copy_link" # "<YOUR_DATABASE_PAGE_URL>"
+PROPERTY_TO_EDIT = "Tprop"
+PROPERTY_NEW_VALUE = "mannaccia"  # usa il tipo Python richiesto
+PROPERTY_TO_CLEAR = "<PROPERTY_NAME>"
+PROPERTY_TO_REMOVE_FROM_SCHEMA = "<PROPERTY_NAME>"
+RUN_PROPERTY_UPDATE = True
+RUN_PROPERTY_CLEAR = False
+RUN_PROPERTY_SCHEMA_DELETE = False
 
 # Pagina semplice (parent = page)
 SIMPLE_PAGE   = "<YOUR_PAGE_URL>"
@@ -117,7 +128,7 @@ def single_sep():
 
 def example_auth():
     sep("1. Auth & Client")
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
     print("Headers costruiti:", list(api.headers.keys()))
     print("Version:", api.version)
 
@@ -145,7 +156,7 @@ def example_paragraph():
     from notion_lib.nModels.blocks.paragraph import ParagraphBlock
     from notion_lib.utils.constants import NColors
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
 
     # Leggi il blocco esistente
@@ -183,7 +194,7 @@ def example_headings():
     from notion_lib.nModels.blocks.heading import Heading3
     from notion_lib.utils.constants import NColors
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
 
     # H1 — cambia testo e colore
@@ -222,7 +233,7 @@ def example_list_blocks():
     from notion_lib.nModels.blocks.list_blocks import Toggle
     from notion_lib.utils.constants import NColors
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
 
     # To-Do: spunta il task
@@ -266,7 +277,7 @@ def example_media():
     from notion_lib.nModels.blocks.base_block import NFactory
     from notion_lib.nTypes.files import FileTypeExternal
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
 
     # Image — leggi e aggiorna caption + URL
@@ -310,7 +321,7 @@ def example_table():
     from notion_lib.nModels.blocks.table import TableBlock, TableRowBlock
     from notion_lib.nTypes.rich_text import simple_rich_text_list
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
 
     # Leggi tabella esistente
@@ -360,7 +371,7 @@ def example_special_blocks():
     from notion_lib.nTypes.icons import NEmoji
     from notion_lib.utils.constants import NColors, NLanguage
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
 
     # Callout — leggi icona e colore, aggiorna testo
@@ -455,7 +466,7 @@ def example_structural_blocks():
     from notion_lib.nModels.blocks.special_blocks import (
         BreadcrumbBlock, )
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
     father = NFactory.find(api.headers, BLK_TOGGLE_FATHER)
 
     # SyncedBlock — leggi payload (sorgente e copia)
@@ -493,7 +504,7 @@ def example_readonly_blocks():
     sep("9. Blocks — LinkToPage / LinkPreview (read-only)")
     from notion_lib.nModels.blocks.base_block import NFactory
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
 
     # Per trovare un link_to_page/link_preview devi avere il loro block_id.
     # Scorri i figli della pagina principale per trovarne uno.
@@ -523,7 +534,7 @@ def example_meeting_notes():
     sep("10. Blocks — Meeting Notes")
     from notion_lib.nModels.blocks.base_block import NFactory
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
     meeting = NFactory.find(api.headers, BLK_MEETING)
 
     print("Titolo:      ", meeting.title)
@@ -564,7 +575,7 @@ def example_simple_page():
     from notion_lib.nModels.blocks.paragraph import ParagraphBlock
     from notion_lib.nTypes.icons import NEmoji
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
 
     # Leggi una pagina semplice
     page = PageFactory.find(api.headers, SIMPLE_PAGE)
@@ -613,7 +624,7 @@ def example_database_page():
     sep("12. Pages — DatabasePage")
     from notion_lib.nModels.pages import PageFactory, DatabasePage
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
 
     # Leggi una entry di un database
     page = PageFactory.find(api.headers, DB_PAGE_URL)
@@ -658,6 +669,86 @@ def example_database_page():
         print("Nuova entry creata:", new_entry)
 
 
+def example_page_properties():
+    """Esempi manuali di lettura, modifica, svuotamento e rimozione proprietà.
+
+    Le modifiche sono disattivate per default. Per provarle, compila i
+    segnaposto qui sopra, imposta il valore Python corretto e abilita il flag
+    corrispondente. La rimozione dallo schema elimina la colonna dal DataSource.
+    """
+    sep("Page properties — lettura e modifiche")
+    from notion_lib.nModels.pages import PageFactory, DatabasePage
+    from notion_lib.nModels.datasources import DataSourceFactory
+    from notion_lib.nTypes.primitives import NDate
+
+    if PROPERTY_PAGE_URL.startswith("<"):
+        raise ValueError("Imposta PROPERTY_PAGE_URL con l'URL o ID di una pagina database reale.")
+
+    api = NotionApiClient(key=os.environ["API_KEY"])
+    page = PageFactory.find(api.headers, PROPERTY_PAGE_URL)
+    if not isinstance(page, DatabasePage):
+        raise TypeError("PROPERTY_PAGE_URL deve puntare a una pagina riga di un DataSource.")
+
+    # Lettura: valore tipizzato e singoli item REST.
+    print("Pagina:", page.title())
+    for name, prop in page.properties.items():
+        print(f"\n{name!r} [{prop.prop_type}] = {prop.value!r}")
+        if prop.prop_type in {"title", "rich_text", "people", "relation", "rollup"}:
+            items = page.get_prop_items(name)
+            print(f"  item API completi ({len(items)}): {items!r}")
+
+    # Modifica: PROPERTY_NEW_VALUE deve essere un valore Python del tipo giusto.
+    # Esempi: stringa per title/rich_text, float per number, bool per checkbox,
+    # lista di stringhe per multi_select/people/relation, dict per place/files.
+    if RUN_PROPERTY_UPDATE:
+        if PROPERTY_TO_EDIT.startswith("<"):
+            raise ValueError("Imposta PROPERTY_TO_EDIT con il nome di una proprietà esistente.")
+        prop = page.prop(PROPERTY_TO_EDIT)
+        if prop.prop_type == "date":
+            # Per una data o un intervallo usa una NDate e valorizza start/end.
+            if isinstance(PROPERTY_NEW_VALUE, dict):
+                prop.start = NDate(PROPERTY_NEW_VALUE["start"])
+                prop.end = NDate(PROPERTY_NEW_VALUE["end"]) if PROPERTY_NEW_VALUE.get("end") else None
+            else:
+                prop.start = NDate(PROPERTY_NEW_VALUE)
+        else:
+            page.set_prop(PROPERTY_TO_EDIT, PROPERTY_NEW_VALUE)
+        page.update()
+        page = PageFactory.find(api.headers, PROPERTY_PAGE_URL)
+        print("Valore dopo la modifica:", page.prop(PROPERTY_TO_EDIT).value)
+
+    # Svuotamento: Notion usa forme diverse secondo il tipo della proprietà.
+    if RUN_PROPERTY_CLEAR:
+        if PROPERTY_TO_CLEAR.startswith("<"):
+            raise ValueError("Imposta PROPERTY_TO_CLEAR con il nome della proprietà da svuotare.")
+        prop = page.prop(PROPERTY_TO_CLEAR)
+        clear_values = {
+            "title": "", "rich_text": "", "number": None, "checkbox": False,
+            "select": None, "multi_select": [], "status": None, "date": None,
+            "url": None, "email": None, "phone_number": None, "relation": [],
+            "people": [], "files": [], "place": None,
+            "verification": "unverified",
+        }
+        if prop.prop_type not in clear_values:
+            raise ValueError(f"La proprietà {prop.prop_type!r} non è svuotabile via API.")
+        if prop.prop_type == "date":
+            prop.start = None
+            prop.end = None
+        else:
+            page.set_prop(PROPERTY_TO_CLEAR, clear_values[prop.prop_type])
+        page.update()
+        page = PageFactory.find(api.headers, PROPERTY_PAGE_URL)
+        print("Valore dopo lo svuotamento:", page.prop(PROPERTY_TO_CLEAR).value)
+
+    # Rimozione della colonna dallo schema: impatta tutte le pagine del DS.
+    if RUN_PROPERTY_SCHEMA_DELETE:
+        if DS_URL.startswith("<") or PROPERTY_TO_REMOVE_FROM_SCHEMA.startswith("<"):
+            raise ValueError("Imposta DS_URL e PROPERTY_TO_REMOVE_FROM_SCHEMA prima della rimozione.")
+        ds = DataSourceFactory.find(api.headers, DS_URL)
+        ds.remove_property(PROPERTY_TO_REMOVE_FROM_SCHEMA)
+        print(f"Colonna {PROPERTY_TO_REMOVE_FROM_SCHEMA!r} rimossa dallo schema del DataSource.")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 13. PAGES — PageFactory routing
 # ─────────────────────────────────────────────────────────────────────────────
@@ -666,7 +757,7 @@ def example_page_factory_routing():
     sep("13. Pages — PageFactory routing")
     from notion_lib.nModels.pages import PageFactory
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
 
     # Pagina con parent page → SimplePage
     p1 = PageFactory.find(api.headers, SIMPLE_PAGE)
@@ -689,7 +780,7 @@ def example_database():
     sep("14. Databases — NDatabase")
     from notion_lib.nModels.databases import DatabaseFactory, NDatabase
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
 
     # Leggi il database
     db = DatabaseFactory.find(api.headers, DB_URL)
@@ -742,7 +833,7 @@ def example_datasource():
     from notion_lib.nEndpoints.databases import get_db_datasources
     from notion_lib.nTypes.ds_filters import F, S
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
 
     # Carica il DS tramite la factory
     ds_list_raw = get_db_datasources(api.headers, DS_URL)
@@ -846,7 +937,7 @@ def example_users():
     from notion_lib.nModels.user import UserFactory, NPerson, NBot, NBotWorkspace
     from notion_lib.nEndpoints.users import get_all_users
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
 
     # Lista tutti gli utenti del workspace
     users = get_all_users(api.headers)
@@ -970,7 +1061,7 @@ def example_search():
     sep("19. Search")
     from notion_lib.nEndpoints.searches import search_by_title
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
 
     # Cerca tutte le pagine con "API" nel titolo
     results = search_by_title(api.headers, "API", filters="page", sorts="descending")
@@ -997,7 +1088,7 @@ def example_comments():
     sep("20. Comments")
     from notion_lib.nEndpoints.comments import create_comment, get_all_comments, get_comment
 
-    api = NotionApiClient(key=API_KEY)
+    api = NotionApiClient(key=os.environ["API_KEY"])
 
     # Crea un commento su un blocco
     comment_result = create_comment(api.headers, BLK_H2, "Commento via API — libreria funziona! ✓")
@@ -1028,7 +1119,7 @@ if __name__ == "__main__":
     # example_auth()
     # example_paragraph()
     # example_headings()
-    example_list_blocks()
+    # example_list_blocks()
     # example_media()
     # example_table()
     # example_special_blocks()
@@ -1037,6 +1128,7 @@ if __name__ == "__main__":
     # example_meeting_notes()
     # example_simple_page()
     # example_database_page()
+    example_page_properties()
     # example_page_factory_routing()
     # example_database()
     # example_datasource()
