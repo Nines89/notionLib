@@ -1131,7 +1131,7 @@ if __name__ == "__main__":
     example_page_properties()
     # example_page_factory_routing()
     # example_database()
-    # example_datasource()
+    example_datasource()
     # example_users()
     # example_filters()
     # example_sorts()

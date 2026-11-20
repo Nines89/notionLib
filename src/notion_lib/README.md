@@ -451,7 +451,7 @@ Metodi comuni a ogni blocco: `.update()`, `.delete()`, `.get_children()` (se `su
 
 `DatabasePage.to_payload()` omette i tipi read-only e include tutte le proprietà scrivibili della pagina. Gli array inviati a Notion sostituiscono l'intero valore della proprietà. Per modificare una sola proprietà senza riscrivere le altre, usa `update_page`; è particolarmente importante per `people`, `relation`, `files` e valori paginati, perché la risposta standard della pagina può contenerne solo una parte. In alternativa, recupera gli item completi e reinvia tutti i valori da conservare. La documentazione Notion descrive i formati e i limiti di scrittura dei [valori delle proprietà pagina](https://developers.notion.com/reference/page-property-values).
 
-### Esempi page properties
+## Esempi page properties
 
 Le proprietà appartengono allo **schema del DataSource**. Per una riga esistente, `DatabasePage.properties` restituisce i value object tipizzati, `page.prop(nome)` restituisce una proprietà e `page.set_prop(nome, valore)` ne cambia il valore in memoria. Le modifiche diventano effettive su Notion con `page.update()`.
 

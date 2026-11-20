@@ -1,3 +1,6 @@
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [build-system]
 requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
@@ -7,15 +10,29 @@ name = "notion-lib"
 version = "0.1.0"
 description = "Python library and GUI for the Notion API"
 requires-python = ">=3.10"
+
 dependencies = [
-    "PyQt6>=6.6.0",
     "requests>=2.31.0",
     "certifi>=2024.0.0",
 ]
 
+[project.optional-dependencies]
+gui = [
+    "PyQt6>=6.6.0",
+]
+
 [project.scripts]
+notion = "notion_lib.cli:main"
 notion-gui = "notion_lib.notion_gui:main"
 notion-folder = "notion_lib.open_automations:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+
+
+# installazione pacchetto e le dipendenze obbligatorie, ma non PyQt6
+#   pip install git+https://github.com/Nines89/notionLib.git
+
+# installazione con funzionalità grafiche (PC only)
+#   pip install "notion-lib[gui] @ git+https://github.com/Nines89/notionLib.git"
