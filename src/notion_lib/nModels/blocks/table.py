@@ -141,7 +141,7 @@ class TableBlock(BlockImpl):
     def update(self):
         _ = super().update()
         for row in self._cells: # noqa
-            return row.update()
+            row.update()
 
     def __getitem__(self, item):
         if isinstance(item, tuple):
